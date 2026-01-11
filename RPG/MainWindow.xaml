@@ -3,10 +3,18 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:RPG"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <!-- Canvas dédié à la zone de jeu : positionnement par coordonnées absolues (Canvas.Left/Canvas.Top) -->
+        <Canvas x:Name="GameCanvas" Background="Black" ClipToBounds="True">
+            <!-- Layer pour les tuiles (en dessous) -->
+            <Canvas x:Name="TilesLayer" Panel.ZIndex="0" />
 
+            <!-- Layer pour les entités (joueur, ennemis) : placé au-dessus des tuiles -->
+            <Canvas x:Name="EntitiesLayer" Panel.ZIndex="1" />
+
+            <!-- Remarque : N'ajoute pas d'Image de tiles ou de player ici en XAML si tu veux tout contrôler depuis le code-behind. -->
+        </Canvas>
     </Grid>
 </Window>
