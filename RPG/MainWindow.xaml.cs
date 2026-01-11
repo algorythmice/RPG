@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System;
+using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -17,11 +19,43 @@ public partial class MainWindow
     public MainWindow()
     {
         InitializeComponent();
+        var vie = damages.CalculateDamage(10, 100);
+        Console.WriteLine($"Vie restante après dégâts : {vie}");
     
-        // Exemple d'utilisation (décommenter pour tester) :
-        //Générer une map 10x8 avec tuiles 64px et créer le joueur au point (100,100):
-        // GenerateTiles(10, 8, 64, new Uri("pack://application:,,,/Images/tile_grass.png", UriKind.Absolute));
-        // CreatePlayer(new Uri("pack://application:,,,/Images/player.png", UriKind.Absolute), 64, 64, 100, 100);
+        // Exemple d'utilisation : générer une map 10x8 avec tuiles 64px et créer le joueur au point (100,100)
+        // IMPORTANT : les images doivent se trouver dans le dossier "Images" situé dans le répertoire d'exécution
+        // (par exemple bin/Debug/net10.0-windows/Images/player.png). Nous construisons des Uri file:// pour
+        // charger les images depuis le code, ainsi on n'a rien à définir dans le XAML pour les Image controls.
+
+        // Chemin du dossier contenant l'exécutable (où VS copie les assets si configurés en "Content" ou manuellement)
+        var exeDir = AppDomain.CurrentDomain.BaseDirectory;
+        var imagesDir = Path.Combine(exeDir, "Images");
+
+        // Exemple de noms de fichiers attendus
+        var tileFile = Path.Combine(imagesDir, "tile_grass.png");
+        var playerFile = Path.Combine(imagesDir, "player.png");
+
+        // Générer les tuiles si l'image existe, sinon générer une grille de rectangles couleurs en guise de placeholder
+        if (File.Exists(tileFile))
+        {
+            // On utilise UriKind.Absolute pour un chemin file://
+            GenerateTiles(10, 8, 64, new Uri(tileFile, UriKind.Absolute));
+        }
+        else
+        {
+            // Placeholder : créer une grille de rectangles remplis de vert clair
+            GenerateTilesPlaceholder(10, 8, 64, Colors.LightGreen);
+        }
+
+        // Créer le joueur depuis le code si le fichier existe, sinon ajouter un placeholder graphique (ellipse rouge)
+        if (File.Exists(playerFile))
+        {
+            CreatePlayer(new Uri(playerFile, UriKind.Absolute), 64, 64, 100, 100);
+        }
+        else
+        {
+            CreatePlayerPlaceholder(64, 64, 100, 100, Colors.Red);
+        }
     }
 
     /// <summary>
@@ -29,9 +63,11 @@ public partial class MainWindow
     /// - widthTiles : nombre de tuiles en largeur (colonnes)
     /// - heightTiles : nombre de tuiles en hauteur (lignes)
     /// - tileSize : taille en pixels d'une tuile (carrée)
-    /// - tileUri : Uri vers l'image de la tuile (pack URI si ressource intégrée)
+    /// - tileUri : Uri vers l'image de la tuile (chemin file:// ou pack:// si vous préférez intégrer en ressource)
     ///
     /// La méthode supprime d'abord les enfants existants de TilesLayer puis crée les images nécessaires.
+    ///
+    /// Utilisation : appeler depuis le code-behind pour changer dynamiquement largeur/hauteur/taille.
     /// </summary>
     public void GenerateTiles(int widthTiles, int heightTiles, int tileSize, Uri tileUri)
     {
@@ -50,7 +86,7 @@ public partial class MainWindow
         bitmap.EndInit();
         bitmap.Freeze();
 
-        for (int y = 0; y < heightTiles; y++) //Coucou
+        for (int y = 0; y < heightTiles; y++)
         {
             for (int x = 0; x < widthTiles; x++)
             {
@@ -74,14 +110,49 @@ public partial class MainWindow
     }
 
     /// <summary>
+    /// Variante de secours : génère des rectangles colorés si aucune image de tuile n'est disponible.
+    /// Utile pour le développement rapide sans assets.
+    /// </summary>
+    private void GenerateTilesPlaceholder(int widthTiles, int heightTiles, int tileSize, Color color)
+    {
+        if (widthTiles <= 0) throw new ArgumentOutOfRangeException(nameof(widthTiles));
+        if (heightTiles <= 0) throw new ArgumentOutOfRangeException(nameof(heightTiles));
+        if (tileSize <= 0) throw new ArgumentOutOfRangeException(nameof(tileSize));
+
+        TilesLayer.Children.Clear();
+
+        var brush = new SolidColorBrush(color);
+
+        for (int y = 0; y < heightTiles; y++)
+        {
+            for (int x = 0; x < widthTiles; x++)
+            {
+                var rect = new System.Windows.Shapes.Rectangle
+                {
+                    Width = tileSize,
+                    Height = tileSize,
+                    Fill = brush,
+                    Stroke = Brushes.DarkGreen,
+                    StrokeThickness = 1,
+                };
+
+                Canvas.SetLeft(rect, x * tileSize);
+                Canvas.SetTop(rect, y * tileSize);
+                TilesLayer.Children.Add(rect);
+            }
+        }
+
+        GameCanvas.Width = widthTiles * tileSize;
+        GameCanvas.Height = heightTiles * tileSize;
+    }
+
+    /// <summary>
     /// Crée un joueur (Image) dans le calque EntitiesLayer et le place au-dessus des tuiles.
-    /// - playerUri : Uri vers l'image du joueur (pack URI si ressource intégrée)
+    /// - playerUri : Uri vers l'image du joueur (file:// ou pack://)
     /// - width/height : dimensions du sprite joueur
-    ///
     /// - x/y : position initiale en pixels depuis le coin supérieur gauche du GameCanvas
     ///
     /// La méthode instancie un Image, lui applique un TranslateTransform pour faciliter les déplacements en runtime.
-    ///
     /// Retourne l'Image créée (et stocke une référence locale pour contrôles futurs).
     /// </summary>
     public Image CreatePlayer(Uri playerUri, int width, int height, double x, double y)
@@ -125,6 +196,30 @@ public partial class MainWindow
     }
 
     /// <summary>
+    /// Variante de secours : crée un placeholder graphique en forme d'ellipse si aucune image joueur n'est disponible.
+    /// Utile pour le développement rapide sans assets.
+    /// </summary>
+    private UIElement CreatePlayerPlaceholder(int width, int height, double x, double y, Color color)
+    {
+        var ellipse = new System.Windows.Shapes.Ellipse
+        {
+            Width = width,
+            Height = height,
+            Fill = new SolidColorBrush(color),
+            Stroke = Brushes.DarkRed,
+            StrokeThickness = 2,
+        };
+
+        Canvas.SetLeft(ellipse, x);
+        Canvas.SetTop(ellipse, y);
+
+        EntitiesLayer.Children.Add(ellipse);
+
+        // Pas d'Image à stocker ici, mais on pourrait créer une ImageSource dynamique si nécessaire.
+        return ellipse;
+    }
+
+    /// <summary>
     /// Déplace le joueur par un delta (dx, dy) en modifiant le TranslateTransform si présent,
     /// sinon modifie directement les Canvas.Left/Top.
     ///
@@ -148,3 +243,4 @@ public partial class MainWindow
         }
     }
 }
+
