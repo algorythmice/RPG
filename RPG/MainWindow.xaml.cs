@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -12,51 +11,99 @@ namespace RPG;
 /// </summary>
 public partial class MainWindow
 {
-    // Référence au joueur (si nécessaire pour le déplacer ensuite)
-    private Image? _playerImage;
-    private TranslateTransform? _playerTransform;
+    private FrameworkElement? _entityRoot;
+    private TextBlock? _entityHpText;
+    private Image? _entityImage;
+    private TranslateTransform? _entityTransform;
+    private int _entityrHp;
+    private Guid? _lastCreatedEntityId;
+    public Guid? LastCreatedEntityId => _lastCreatedEntityId;
+
+    private readonly Dictionary<Guid, EntityInfo> _entity = new();
+    private class EntityInfo
+    {
+        public FrameworkElement Root { get; init; } = null!;
+        public Image Image { get; init; } = null!;
+        public TextBlock HpText { get; init; } = null!;
+        public TranslateTransform Transform { get; init; } = null!;
+        public int Hp { get; set; }
+    }
 
     public MainWindow()
     {
         InitializeComponent();
-        var vie = damages.CalculateDamage(10, 100);
-        Console.WriteLine($"Vie restante après dégâts : {vie}");
-    
-        // Exemple d'utilisation : générer une map 10x8 avec tuiles 64px et créer le joueur au point (100,100)
-        // IMPORTANT : les images doivent se trouver dans le dossier "Images" situé dans le répertoire d'exécution
-        // (par exemple bin/Debug/net10.0-windows/Images/player.png). Nous construisons des Uri file:// pour
-        // charger les images depuis le code, ainsi on n'a rien à définir dans le XAML pour les Image controls.
-
-        // Chemin du dossier contenant l'exécutable (où VS copie les assets si configurés en "Content" ou manuellement)
+        
         var exeDir = AppDomain.CurrentDomain.BaseDirectory;
         var imagesDir = Path.Combine(exeDir, "Images");
-
-        // Exemple de noms de fichiers attendus
+        
         var tileFile = Path.Combine(imagesDir, "tile_grass.png");
-        var playerFile = Path.Combine(imagesDir, "player.png");
+        var entityFile = Path.Combine(imagesDir, "player.png");
 
-        // Générer les tuiles si l'image existe, sinon générer une grille de rectangles couleurs en guise de placeholder
-        if (File.Exists(tileFile))
+        GenerateTiles(10, 8, 64, new Uri(tileFile, UriKind.Absolute));
+        
+        if (File.Exists(entityFile))
         {
-            // On utilise UriKind.Absolute pour un chemin file://
-            GenerateTiles(10, 8, 64, new Uri(tileFile, UriKind.Absolute));
-        }
-        else
-        {
-            // Placeholder : créer une grille de rectangles remplis de vert clair
-            GenerateTilesPlaceholder(10, 8, 64, Colors.LightGreen);
-        }
+            var entityId1 = CreateEntity(new Uri(entityFile, UriKind.Absolute), 64, 64, 100, 100, 120);
+            var entityId2 = CreateEntity(new Uri(entityFile, UriKind.Absolute), 64, 64, 200, 120, 80);
 
-        // Créer le joueur depuis le code si le fichier existe, sinon ajouter un placeholder graphique (ellipse rouge)
-        if (File.Exists(playerFile))
-        {
-            CreatePlayer(new Uri(playerFile, UriKind.Absolute), 64, 64, 100, 100);
-        }
-        else
-        {
-            CreatePlayerPlaceholder(64, 64, 100, 100, Colors.Red);
+            // Exemple de modification ciblée : changer les PV du premier joueur
+            SetEntityHp(entityId1, 90);
+
+            // Déplacer le second joueur de 32px à droite
+            MoveEntity(entityId2, 32, 0);
+
+            // Exemple : récupérer la position et les PV
+            var pos1 = GetEntityPosition(entityId1);
+            var hp2 = GetEntityrHp(entityId2);
+            Console.WriteLine($"Entity1 position: {pos1?.X},{pos1?.Y} ; Entity2 HP: {hp2}");
         }
     }
+
+    // Retourne les PV du joueur identifié
+    public int? GetEntityrHp(Guid entityId)
+    {
+        if (!_entity.TryGetValue(entityId, out var info)) return null;
+        return info.Hp;
+    }
+
+    // Retourne la position actuelle du joueur (Canvas.Left/Top + TranslateTransform) ou null si absent
+    public Point? GetEntityPosition(Guid entityId)
+    {
+        if (!_entity.TryGetValue(entityId, out var info)) return null;
+        var left = Canvas.GetLeft(info.Root);
+        var top = Canvas.GetTop(info.Root);
+        var tx = info.Transform.X;
+        var ty = info.Transform.Y;
+        return new Point(left + tx, top + ty);
+    }
+
+    // Déplace un joueur en position absolue (réinitialise le TranslateTransform)
+    public bool SetEntityPosition(Guid entityId, double x, double y)
+    {
+        if (!_entity.TryGetValue(entityId, out var info)) return false;
+        // positionner le container et remettre le TranslateTransform à zéro
+        Canvas.SetLeft(info.Root, x);
+        Canvas.SetTop(info.Root, y);
+        info.Transform.X = 0;
+        info.Transform.Y = 0;
+        return true;
+    }
+
+    // Supprime proprement un joueur : retire l'UI et enlève l'entrée du dictionnaire
+    public bool RemoveEntity(Guid entityId)
+    {
+        if (!_entity.TryGetValue(entityId, out var info)) return false;
+        // retirer visuel si présent
+        if (EntitiesLayer.Children.Contains(info.Root))
+        {
+            EntitiesLayer.Children.Remove(info.Root);
+        }
+        _entity.Remove(entityId);
+        // si c'était le dernier créé, remettez _lastCreatedEntityId à null
+        if (_lastCreatedEntityId == entityId) _lastCreatedEntityId = null;
+        return true;
+    }
+    
 
     /// <summary>
     /// Génère une grille de tuiles dans le canvas TilesLayer.
@@ -77,8 +124,7 @@ public partial class MainWindow
         if (tileUri == null) throw new ArgumentNullException(nameof(tileUri));
 
         TilesLayer.Children.Clear();
-
-        // Précharger l'image de la tuile et la freeze pour de meilleures performances
+        
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
         bitmap.UriSource = tileUri;
@@ -110,61 +156,24 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Variante de secours : génère des rectangles colorés si aucune image de tuile n'est disponible.
-    /// Utile pour le développement rapide sans assets.
-    /// </summary>
-    private void GenerateTilesPlaceholder(int widthTiles, int heightTiles, int tileSize, Color color)
-    {
-        if (widthTiles <= 0) throw new ArgumentOutOfRangeException(nameof(widthTiles));
-        if (heightTiles <= 0) throw new ArgumentOutOfRangeException(nameof(heightTiles));
-        if (tileSize <= 0) throw new ArgumentOutOfRangeException(nameof(tileSize));
-
-        TilesLayer.Children.Clear();
-
-        var brush = new SolidColorBrush(color);
-
-        for (int y = 0; y < heightTiles; y++)
-        {
-            for (int x = 0; x < widthTiles; x++)
-            {
-                var rect = new System.Windows.Shapes.Rectangle
-                {
-                    Width = tileSize,
-                    Height = tileSize,
-                    Fill = brush,
-                    Stroke = Brushes.DarkGreen,
-                    StrokeThickness = 1,
-                };
-
-                Canvas.SetLeft(rect, x * tileSize);
-                Canvas.SetTop(rect, y * tileSize);
-                TilesLayer.Children.Add(rect);
-            }
-        }
-
-        GameCanvas.Width = widthTiles * tileSize;
-        GameCanvas.Height = heightTiles * tileSize;
-    }
-
-    /// <summary>
     /// Crée un joueur (Image) dans le calque EntitiesLayer et le place au-dessus des tuiles.
-    /// - playerUri : Uri vers l'image du joueur (file:// ou pack://)
+    /// - entityTexture : Uri vers l'image du joueur (file:// ou pack://)
     /// - width/height : dimensions du sprite joueur
     /// - x/y : position initiale en pixels depuis le coin supérieur gauche du GameCanvas
     ///
     /// La méthode instancie un Image, lui applique un TranslateTransform pour faciliter les déplacements en runtime.
-    /// Retourne l'Image créée (et stocke une référence locale pour contrôles futurs).
+    /// Retourne l'identifiant (Guid) du joueur créé. Utilisez cet id pour appeler MoveEntity(id,...) ou SetEntityHp(id,...).
     /// </summary>
-    public Image CreatePlayer(Uri playerUri, int width, int height, double x, double y)
+    public Guid CreateEntity(Uri entityTexture, int width, int height, double x, double y, int entityHp)
     {
-        if (playerUri == null) throw new ArgumentNullException(nameof(playerUri));
+        if (entityTexture == null) throw new ArgumentNullException(nameof(entityTexture));
         if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
         if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
 
         // Charger l'image du joueur et la freeze pour de meilleures performances
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
-        bitmap.UriSource = playerUri;
+        bitmap.UriSource = entityTexture;
         bitmap.CacheOption = BitmapCacheOption.OnLoad;
         bitmap.EndInit();
         bitmap.Freeze();
@@ -176,71 +185,88 @@ public partial class MainWindow
             Source = bitmap,
             Stretch = Stretch.Fill,
         };
-
-        // Utiliser TranslateTransform : plus performant pour de fréquentes mises à jour de position
-        var tt = new TranslateTransform();
-        img.RenderTransform = tt;
-        img.RenderTransformOrigin = new Point(0, 0);
-
-        // Position initiale : on place l'image dans le Canvas puis on applique le translate si besoin
-        Canvas.SetLeft(img, x);
-        Canvas.SetTop(img, y);
-
-        EntitiesLayer.Children.Add(img);
-
-        // Conserver une référence pour modifications ultérieures (déplacement)
-        _playerImage = img;
-        _playerTransform = tt;
-
-        return img;
-    }
-
-    /// <summary>
-    /// Variante de secours : crée un placeholder graphique en forme d'ellipse si aucune image joueur n'est disponible.
-    /// Utile pour le développement rapide sans assets.
-    /// </summary>
-    private UIElement CreatePlayerPlaceholder(int width, int height, double x, double y, Color color)
-    {
-        var ellipse = new System.Windows.Shapes.Ellipse
+        
+        // Container unique pour le joueur : image + texte des PV (au-dessus)
+        var container = new Grid
         {
             Width = width,
-            Height = height,
-            Fill = new SolidColorBrush(color),
-            Stroke = Brushes.DarkRed,
-            StrokeThickness = 2,
+            Height = height + 20
         };
 
-        Canvas.SetLeft(ellipse, x);
-        Canvas.SetTop(ellipse, y);
+        // Placer l'image plus bas dans le container pour laisser la place au TextBlock en haut
+        Canvas.SetTop(img, 20);
+        // On ajoute l'image directement dans le container (pas dans un autre Canvas intermédiaire)
+        container.Children.Add(img);
+        
+        var hpText = new TextBlock
+        {
+            Text = entityHp.ToString(),
+            Foreground = Brushes.White,
+            Background = new SolidColorBrush(Color.FromArgb(160, 0, 0, 0)),
+            Padding = new Thickness(4, 2, 4, 2),
+            FontWeight = FontWeights.Bold,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Top,
+            TextAlignment = TextAlignment.Center,
+        };
+        container.Children.Add(hpText);
 
-        EntitiesLayer.Children.Add(ellipse);
+        // Utiliser TranslateTransform sur le container : le texte et l'image se déplacent ensemble
+        var tt = new TranslateTransform();
+        container.RenderTransform = tt;
+        container.RenderTransformOrigin = new Point(0, 0);
 
-        // Pas d'Image à stocker ici, mais on pourrait créer une ImageSource dynamique si nécessaire.
-        return ellipse;
+        // Position initiale : positionner le container dans le Canvas
+        Canvas.SetLeft(container, x);
+        Canvas.SetTop(container, y);
+
+        // Ajouter le container (et non l'image) au calque des entités
+        EntitiesLayer.Children.Add(container);
+        
+        _entityImage = img;
+        _entityTransform = tt;
+        _entityrHp = entityHp;
+        _entityRoot = container;
+        _entityHpText = hpText;
+        
+        var id = Guid.NewGuid();
+        var info = new EntityInfo
+        {
+            Root = container,
+            Image = img,
+            HpText = hpText,
+            Transform = tt,
+            Hp = entityHp,
+        };
+        _entity[id] = info;
+        
+        _lastCreatedEntityId = id;
+        return id;
     }
 
-    /// <summary>
-    /// Déplace le joueur par un delta (dx, dy) en modifiant le TranslateTransform si présent,
-    /// sinon modifie directement les Canvas.Left/Top.
-    ///
-    /// Cette méthode montre un exemple d'API simplifiée pour déplacer le joueur depuis le code.
-    /// </summary>
-    public void MovePlayer(double dx, double dy)
+    // Déplacer un joueur spécifique par son Id
+    public void MoveEntity(Guid entityId, double dx, double dy)
     {
-        if (_playerImage == null) return;
+        if (!_entity.TryGetValue(entityId, out var info)) return;
+        
+        info.Transform.X += dx;
+        info.Transform.Y += dy;
+    }
 
-        if (_playerTransform != null)
+    // Mettre à jour les PV d'un joueur spécifique
+    public void SetEntityHp(Guid entityId, int hp)
+    {
+        if (!_entity.TryGetValue(entityId, out var info)) return;
+
+        info.Hp = hp;
+        info.HpText.Text = info.Hp.ToString();
+        info.Image.Opacity = info.Hp > 0 ? 1.0 : 0.5;
+        
+        if (_entityRoot == info.Root)
         {
-            _playerTransform.X += dx;
-            _playerTransform.Y += dy;
-        }
-        else
-        {
-            var left = Canvas.GetLeft(_playerImage);
-            var top = Canvas.GetTop(_playerImage);
-            Canvas.SetLeft(_playerImage, left + dx);
-            Canvas.SetTop(_playerImage, top + dy);
+            _entityrHp = hp;
+            if (_entityHpText != null) _entityHpText.Text = hp.ToString();
+            if (_entityImage != null) _entityImage.Opacity = hp > 0 ? 1.0 : 0.5;
         }
     }
 }
-
