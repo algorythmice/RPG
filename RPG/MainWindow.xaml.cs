@@ -50,7 +50,7 @@ public partial class MainWindow
         bitmap.EndInit();
         bitmap.Freeze();
 
-        for (int y = 0; y < heightTiles; y++)
+        for (int y = 0; y < heightTiles; y++) //Coucou
         {
             for (int x = 0; x < widthTiles; x++)
             {
