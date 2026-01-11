@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -8,19 +6,25 @@ using System.Windows.Media.Imaging;
 
 namespace RPG;
 
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
 public partial class MainWindow
 {
     private Guid? _lastCreatedEntityId;
     public Guid? LastCreatedEntityId => _lastCreatedEntityId;
-    private readonly List<Guid> _createdEntities = new();
+    private readonly List<Guid> _createdEntities = new(); // store all created entity ids for use in OnGameTick
     public IReadOnlyList<Guid> CreatedEntities => _createdEntities;
+    private readonly Dictionary<string, Guid> _entityByName = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly Dictionary<Guid, EntityInfo> _entity = new();
     private readonly GameLoop _gameLoop = new(TimeSpan.FromMilliseconds(16)); // ~60 FPS
-
+    
+    public record EntityHandle(Guid Id, 
+        string? Name, 
+        FrameworkElement Root, 
+        Image Image, 
+        TextBlock HpText, 
+        TranslateTransform Transform, 
+        int Hp);
+    
     private class EntityInfo
     {
         public FrameworkElement Root { get; init; } = null!;
@@ -28,6 +32,7 @@ public partial class MainWindow
         public TextBlock HpText { get; init; } = null!;
         public TranslateTransform Transform { get; init; } = null!;
         public int Hp { get; set; }
+        public string? Name { get; init; }
     }
     
     public void RegisterTick(Action<double> handler) => _gameLoop.Register(handler);
@@ -53,8 +58,8 @@ public partial class MainWindow
 
         if (File.Exists(entityFile))
         {
-            var entityId1 = CreateEntity(new Uri(entityFile, UriKind.Absolute), 64, 64, 100, 100, 120);
-            var entityId2 = CreateEntity(new Uri(entityFile, UriKind.Absolute), 64, 64, 200, 120, 80);
+            var entityId1 = CreateEntity(new Uri(entityFile, UriKind.Absolute), 64, 64, 100, 100, 120, name: "Player1");
+            var entityId2 = CreateEntity(new Uri(entityFile, UriKind.Absolute), 64, 64, 200, 120, 80, name: "Player2");
 
             _createdEntities.Add(entityId1);
             _createdEntities.Add(entityId2);
@@ -176,11 +181,12 @@ public partial class MainWindow
     /// La méthode instancie un Image, lui applique un TranslateTransform pour faciliter les déplacements en runtime.
     /// Retourne l'identifiant (Guid) du joueur créé. Utilisez cet id pour appeler MoveEntity(id,...) ou SetEntityHp(id,...).
     /// </summary>
-    public Guid CreateEntity(Uri entityTexture, int width, int height, double x, double y, int entityHp)
+    public Guid CreateEntity(Uri entityTexture, int width, int height, double x, double y, int entityHp, string? name = null)
     {
         if (entityTexture == null) throw new ArgumentNullException(nameof(entityTexture));
         if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
         if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+        if (name != null && name.Length == 0) name = null;
 
         // Charger l'image du joueur et la freeze pour de meilleures performances
         var bitmap = new BitmapImage();
@@ -244,11 +250,16 @@ public partial class MainWindow
             HpText = hpText,
             Transform = tt,
             Hp = entityHp,
+            Name = name,
         };
         _entity[id] = info;
         
         _lastCreatedEntityId = id;
         _createdEntities.Add(id);
+        if (name != null)
+        {
+            _entityByName[name] = id;
+        }
         return id;
     }
 
@@ -271,7 +282,19 @@ public partial class MainWindow
         info.Image.Opacity = info.Hp > 0 ? 1.0 : 0.5;
         // No global single-entity compatibility fields updated here; per-entity UI already refreshed above
     }
-    
+    public Guid? FindEntityIdByName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return null;
+        return _entityByName.TryGetValue(name, out var id) ? id : null;
+    }
+    public EntityHandle? FindEntityByName(string name)
+    {
+        var id = FindEntityIdByName(name);
+        if (id == null) return null;
+        if (!_entity.TryGetValue(id.Value, out var info)) return null;
+        return new EntityHandle(id.Value, info.Name, info.Root, info.Image, info.HpText, info.Transform, info.Hp);
+    }
+ 
     private void OnGameTick(double dt)
     {
         // Example: iterate entities and apply logic
@@ -282,13 +305,9 @@ public partial class MainWindow
         //     // e.g. move entities slowly to the right:
         //     info.Transform.X += 50 * dt; // 50 px per second
         // }
-        foreach (var id in _createdEntities)
-        {
-            if (!_entity.TryGetValue(id, out var info)) continue;
-            // No-op example to show where to work with created entities
-            _ = info.Hp;
-        }
-
-        // Put your test code here. Keep it lightweight (UI updates should remain on UI thread).
+        // Example of resolving by name:
+        var player1 = FindEntityByName("Player2");
+        if (player1 != null) { player1.Transform.X += 20 * dt; }
+        
     }
 }
