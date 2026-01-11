@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -11,15 +13,14 @@ namespace RPG;
 /// </summary>
 public partial class MainWindow
 {
-    private FrameworkElement? _entityRoot;
-    private TextBlock? _entityHpText;
-    private Image? _entityImage;
-    private TranslateTransform? _entityTransform;
-    private int _entityrHp;
     private Guid? _lastCreatedEntityId;
     public Guid? LastCreatedEntityId => _lastCreatedEntityId;
+    private readonly List<Guid> _createdEntities = new();
+    public IReadOnlyList<Guid> CreatedEntities => _createdEntities;
 
     private readonly Dictionary<Guid, EntityInfo> _entity = new();
+    private readonly GameLoop _gameLoop = new(TimeSpan.FromMilliseconds(16)); // ~60 FPS
+
     private class EntityInfo
     {
         public FrameworkElement Root { get; init; } = null!;
@@ -28,23 +29,35 @@ public partial class MainWindow
         public TranslateTransform Transform { get; init; } = null!;
         public int Hp { get; set; }
     }
+    
+    public void RegisterTick(Action<double> handler) => _gameLoop.Register(handler);
+    public void UnregisterTick(Action<double> handler) => _gameLoop.Unregister(handler);
+    public void StopGameLoop() => _gameLoop.Stop();
+    public void StartGameLoop() => _gameLoop.Start();
 
     public MainWindow()
     {
         InitializeComponent();
-        
+
+        // Register the main tick handler and start the loop after initialization
+        _gameLoop.Register(OnGameTick);
+        _gameLoop.Start();
+
         var exeDir = AppDomain.CurrentDomain.BaseDirectory;
         var imagesDir = Path.Combine(exeDir, "Images");
-        
+
         var tileFile = Path.Combine(imagesDir, "tile_grass.png");
         var entityFile = Path.Combine(imagesDir, "player.png");
 
         GenerateTiles(10, 8, 64, new Uri(tileFile, UriKind.Absolute));
-        
+
         if (File.Exists(entityFile))
         {
             var entityId1 = CreateEntity(new Uri(entityFile, UriKind.Absolute), 64, 64, 100, 100, 120);
             var entityId2 = CreateEntity(new Uri(entityFile, UriKind.Absolute), 64, 64, 200, 120, 80);
+
+            _createdEntities.Add(entityId1);
+            _createdEntities.Add(entityId2);
 
             // Exemple de modification ciblée : changer les PV du premier joueur
             SetEntityHp(entityId1, 90);
@@ -56,6 +69,7 @@ public partial class MainWindow
             var pos1 = GetEntityPosition(entityId1);
             var hp2 = GetEntityrHp(entityId2);
             Console.WriteLine($"Entity1 position: {pos1?.X},{pos1?.Y} ; Entity2 HP: {hp2}");
+            
         }
     }
 
@@ -93,13 +107,11 @@ public partial class MainWindow
     public bool RemoveEntity(Guid entityId)
     {
         if (!_entity.TryGetValue(entityId, out var info)) return false;
-        // retirer visuel si présent
         if (EntitiesLayer.Children.Contains(info.Root))
         {
             EntitiesLayer.Children.Remove(info.Root);
         }
         _entity.Remove(entityId);
-        // si c'était le dernier créé, remettez _lastCreatedEntityId à null
         if (_lastCreatedEntityId == entityId) _lastCreatedEntityId = null;
         return true;
     }
@@ -223,12 +235,7 @@ public partial class MainWindow
         // Ajouter le container (et non l'image) au calque des entités
         EntitiesLayer.Children.Add(container);
         
-        _entityImage = img;
-        _entityTransform = tt;
-        _entityrHp = entityHp;
-        _entityRoot = container;
-        _entityHpText = hpText;
-        
+        // Not storing per-entity in global fields; data is stored in EntityInfo below
         var id = Guid.NewGuid();
         var info = new EntityInfo
         {
@@ -241,6 +248,7 @@ public partial class MainWindow
         _entity[id] = info;
         
         _lastCreatedEntityId = id;
+        _createdEntities.Add(id);
         return id;
     }
 
@@ -261,12 +269,26 @@ public partial class MainWindow
         info.Hp = hp;
         info.HpText.Text = info.Hp.ToString();
         info.Image.Opacity = info.Hp > 0 ? 1.0 : 0.5;
-        
-        if (_entityRoot == info.Root)
+        // No global single-entity compatibility fields updated here; per-entity UI already refreshed above
+    }
+    
+    private void OnGameTick(double dt)
+    {
+        // Example: iterate entities and apply logic
+        // foreach (var kv in _entity)
+        // {
+        //     var id = kv.Key;
+        //     var info = kv.Value;
+        //     // e.g. move entities slowly to the right:
+        //     info.Transform.X += 50 * dt; // 50 px per second
+        // }
+        foreach (var id in _createdEntities)
         {
-            _entityrHp = hp;
-            if (_entityHpText != null) _entityHpText.Text = hp.ToString();
-            if (_entityImage != null) _entityImage.Opacity = hp > 0 ? 1.0 : 0.5;
+            if (!_entity.TryGetValue(id, out var info)) continue;
+            // No-op example to show where to work with created entities
+            _ = info.Hp;
         }
+
+        // Put your test code here. Keep it lightweight (UI updates should remain on UI thread).
     }
 }
