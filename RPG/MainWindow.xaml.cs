@@ -17,12 +17,12 @@ public partial class MainWindow
     private readonly Dictionary<Guid, EntityInfo> _entity = new();
     private readonly GameLoop _gameLoop = new(TimeSpan.FromMilliseconds(16)); // ~60 FPS
     
-    public record EntityHandle(Guid Id, 
-        string? Name, 
-        FrameworkElement Root, 
-        Image Image, 
-        TextBlock HpText, 
-        TranslateTransform Transform, 
+    public record EntityHandle(Guid Id,
+        string? Name,
+        FrameworkElement Root,
+        Image Image,
+        TextBlock HpText,
+        TranslateTransform Transform,
         int Hp);
     
     private class EntityInfo
@@ -280,7 +280,6 @@ public partial class MainWindow
         info.Hp = hp;
         info.HpText.Text = info.Hp.ToString();
         info.Image.Opacity = info.Hp > 0 ? 1.0 : 0.5;
-        // No global single-entity compatibility fields updated here; per-entity UI already refreshed above
     }
     public Guid? FindEntityIdByName(string name)
     {
@@ -297,17 +296,32 @@ public partial class MainWindow
  
     private void OnGameTick(double dt)
     {
-        // Example: iterate entities and apply logic
-        // foreach (var kv in _entity)
-        // {
-        //     var id = kv.Key;
-        //     var info = kv.Value;
-        //     // e.g. move entities slowly to the right:
-        //     info.Transform.X += 50 * dt; // 50 px per second
-        // }
-        // Example of resolving by name:
-        var player1 = FindEntityByName("Player2");
-        if (player1 != null) { player1.Transform.X += 20 * dt; }
-        
+        // Ex : Obtenir l'id d'une entité par son nom
+        var player1 = FindEntityByName("Player1");
+        var player2 = FindEntityByName("Player2");
+        if (player1 != null)
+        {
+            //code ici si l'entité a été trouvée
+            //Ex : Afficher les PV dans la console
+            Console.WriteLine($"Player1 Hp: {player1.Hp}");
+        }
+
+
+        //Ex : Obtenir les coordonées d'une entité avec son id
+        var pos = GetEntityPosition(player1!.Id);
+        if (pos != null)
+        {
+            //code ici si la position a été trouvée
+            //Ex : Afficher les coordonnées dans la console
+            Console.WriteLine($"Player1 position: {pos?.X},{pos?.Y}");
+        }
+
+        //Ex : Déplacer une entité avec son id
+        MoveEntity(player1!.Id, 20 * dt , 0);
+
+        //Ex : Déplacer une entité a une position absolue
+        SetEntityPosition(player2!.Id, 300, 200);
+
+
     }
 }

@@ -2,10 +2,6 @@
 
 namespace RPG
 {
-    /// <summary>
-    /// Simple game loop service that runs on the WPF Dispatcher thread.
-    /// You can Register callbacks that receive deltaTime (seconds) on each tick.
-    /// </summary>
     public sealed class GameLoop
     {
         private readonly DispatcherTimer _timer;
@@ -44,7 +40,6 @@ namespace RPG
                 }
                 catch (Exception ex)
                 {
-                    // Swallow exceptions to not stop the loop; in a real project log this.
                     Console.WriteLine($"GameLoop callback exception: {ex}");
                 }
             }
