@@ -1,8 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
+
 
 namespace RPG;
 
@@ -18,32 +17,51 @@ public partial class MainWindow
     /// La méthode instancie un Image, lui applique un TranslateTransform pour faciliter les déplacements en runtime.
     /// Retourne l'identifiant (Guid) du joueur créé. Utilisez cet id pour appeler MoveEntity(id,...) ou SetEntityHp(id,...).
     /// </summary>
-    public Guid CreateEntity(Uri entityTexture, int width, int height, double x, double y, int entityHp, string? name = null) => _entityManager.CreateEntity(entityTexture, width, height, x, y, entityHp, name);
+    private Guid CreateEntity(Uri entityTexture, int width, int height, double x, double y, int entityHp, string? name = null) => _entityManager.CreateEntity(entityTexture, width, height, x, y, entityHp, name);
 
     // Renvoie la position de l'entitée sous la forme d'un Point (X,Y) ou null si l'id n'existe pas
     //EX:
     //var pos = GetEntityPosition(entityId);
     //pos.X , pos.Y
-    public Point? GetEntityPosition(Guid entityId) => _entityManager.GetEntityPosition(entityId);
+    private Point? GetEntityPosition(Guid entityId) => _entityManager.GetEntityPosition(entityId);
     
     // Positionne l'entitée à la position absolue (x,y) en pixels; retourne True si réussite ou False si l'id n'existe pas
-    public bool SetEntityPosition(Guid entityId, double x, double y) => _entityManager.SetEntityPosition(entityId, x, y);
+    private bool SetEntityPosition(Guid entityId, double x, double y) => _entityManager.SetEntityPosition(entityId, x, y);
     
     // Supprime l'entitée retourne; True si réussite ou False si l'id n'existe pas
-    public bool RemoveEntity(Guid entityId) => _entityManager.RemoveEntity(entityId);
+    private bool RemoveEntity(Guid entityId) => _entityManager.RemoveEntity(entityId);
     
     // Renvoie les points de vie int (HP) de l'entitée ou null si l'id n'existe pas
-    public int? GetEntityrHp(Guid entityId) => _entityManager.GetEntityrHp(entityId);
+    private int? GetEntityrHp(Guid entityId) => _entityManager.GetEntityrHp(entityId);
     
     
     // Déplace l'entitée de (dx,dy) pixels; ne fait rien si l'id n'existe pas
-    public void MoveEntity(Guid entityId, double dx, double dy) => _entityManager.MoveEntity(entityId, dx, dy);
+    private void MoveEntity(Guid entityId, double dx, double dy) => _entityManager.MoveEntity(entityId, dx, dy);
     
     // Définit les points de vie (HP) de l'entitée; ne fait rien si l'id n'existe pas
-    public void SetEntityHp(Guid entityId, int hp) => _entityManager.SetEntityHp(entityId, hp);
+    private void SetEntityHp(Guid entityId, int hp) => _entityManager.SetEntityHp(entityId, hp);
     
     // Recherche l'entitée par son nom; retourne null si non trouvée
-    public EntityManager.EntityHandle? FindEntityByName(string name) => _entityManager.FindEntityByName(name);
+    private EntityManager.EntityHandle? FindEntityByName(string name) => _entityManager.FindEntityByName(name);
+    
+    // Génère les tuiles du terrain en appelant la méthode de TerrainGeneration
+    private static void GenerateTiles(
+        int widthTiles, 
+        int heightTiles, 
+        int tileSize, 
+        Uri tileUri, 
+        Canvas tilesLayer, 
+        Canvas gameCanvas
+        ) => 
+        
+        TerrainGeneration.GenerateTiles(
+        widthTiles, 
+        heightTiles, 
+        tileSize, 
+        tileUri, 
+        tilesLayer, 
+        gameCanvas
+        );
  
     public void RegisterTick(Action<double> handler) => _gameLoop.Register(handler);
     public void UnregisterTick(Action<double> handler) => _gameLoop.Unregister(handler);
@@ -69,15 +87,15 @@ public partial class MainWindow
         var exeDir = AppDomain.CurrentDomain.BaseDirectory;
         var imagesDir = Path.Combine(exeDir, "Images");
 
-        var tileFile = Path.Combine(imagesDir, "tile_grass.png");
-        var entityFile = Path.Combine(imagesDir, "player.png");
+        var grassTexture = Path.Combine(imagesDir, "tile_grass.png");
+        var entityTexture = Path.Combine(imagesDir, "player.png");
 
-        GenerateTiles(10, 8, 64, new Uri(tileFile, UriKind.Absolute));
+        GenerateTiles(10, 8, 64, new Uri(grassTexture, UriKind.Absolute), TilesLayer, GameCanvas);
 
-        if (File.Exists(entityFile))
+        if (File.Exists(entityTexture))
         {
-            var entityId1 = CreateEntity(new Uri(entityFile, UriKind.Absolute), 64, 64, 100, 100, 120, name: "Player1");
-            var entityId2 = CreateEntity(new Uri(entityFile, UriKind.Absolute), 64, 64, 200, 120, 80, name: "Player2");
+            var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 100, 100, 120, name: "Player1");
+            var entityId2 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, name: "Player2");
 
             // Exemple de modification ciblée : changer les PV du premier joueur
             SetEntityHp(entityId1, 90);
@@ -92,56 +110,7 @@ public partial class MainWindow
             
         }
     }
-
-    /// <summary>
-    /// Génère une grille de tuiles dans le canvas TilesLayer.
-    /// - widthTiles : nombre de tuiles en largeur (colonnes)
-    /// - heightTiles : nombre de tuiles en hauteur (lignes)
-    /// - tileSize : taille en pixels d'une tuile (carrée)
-    /// - tileUri : Uri vers l'image de la tuile (chemin file:// ou pack:// si vous préférez intégrer en ressource)
-    ///
-    /// La méthode supprime d'abord les enfants existants de TilesLayer puis crée les images nécessaires.
-    ///
-    /// Utilisation : appeler depuis le code-behind pour changer dynamiquement largeur/hauteur/taille.
-    /// </summary>
-    public void GenerateTiles(int widthTiles, int heightTiles, int tileSize, Uri tileUri)
-    {
-        if (widthTiles <= 0) throw new ArgumentOutOfRangeException(nameof(widthTiles));
-        if (heightTiles <= 0) throw new ArgumentOutOfRangeException(nameof(heightTiles));
-        if (tileSize <= 0) throw new ArgumentOutOfRangeException(nameof(tileSize));
-        if (tileUri == null) throw new ArgumentNullException(nameof(tileUri));
-
-        TilesLayer.Children.Clear();
-        
-        var bitmap = new BitmapImage();
-        bitmap.BeginInit();
-        bitmap.UriSource = tileUri;
-        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.EndInit();
-        bitmap.Freeze();
-
-        for (int y = 0; y < heightTiles; y++)
-        {
-            for (int x = 0; x < widthTiles; x++)
-            {
-                var img = new Image
-                {
-                    Width = tileSize,
-                    Height = tileSize,
-                    Source = bitmap,
-                    Stretch = Stretch.Fill,
-                };
-
-                Canvas.SetLeft(img, x * tileSize);
-                Canvas.SetTop(img, y * tileSize);
-                TilesLayer.Children.Add(img);
-            }
-        }
-
-        // Ajuster la taille du GameCanvas si nécessaire pour contenir toutes les tuiles
-        GameCanvas.Width = widthTiles * tileSize;
-        GameCanvas.Height = heightTiles * tileSize;
-    }
+    
 
     private void OnGameTick(double dt)
     {
