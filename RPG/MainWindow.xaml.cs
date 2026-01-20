@@ -73,14 +73,13 @@ public partial class MainWindow
     private readonly EntityManager _entityManager;
     public Guid? LastCreatedEntityId => _entityManager.LastCreatedEntityId;
     public IReadOnlyList<Guid> CreatedEntities => _entityManager.CreatedEntities;
+    private readonly List<string> _scheduledTaskNames = new();
 
     public MainWindow()
     {
         InitializeComponent();
 
         _entityManager = new EntityManager(EntitiesLayer);
-
-        // Register the main tick handler and start the loop after initialization
         _gameLoop.Register(OnGameTick);
         _gameLoop.Start();
 
@@ -97,24 +96,28 @@ public partial class MainWindow
             var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 100, 100, 120, name: "Player1");
             var entityId2 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, name: "Player2");
 
-            // Exemple de modification ciblée : changer les PV du premier joueur
             SetEntityHp(entityId1, 90);
-
-            // Déplacer le second joueur de 32px à droite
             MoveEntity(entityId2, 32, 0);
 
-            // Exemple : récupérer la position et les PV
             var pos1 = GetEntityPosition(entityId1);
             var hp2 = GetEntityrHp(entityId2);
             Console.WriteLine($"Entity1 position: {pos1?.X},{pos1?.Y} ; Entity2 HP: {hp2}");
-            
         }
     }
     
-
+    protected override void OnClosed(EventArgs e)
+    {
+        base.OnClosed(e);
+        foreach (var name in _scheduledTaskNames.ToList())
+        {
+            _gameLoop.CancelScheduled(name);
+        }
+        _scheduledTaskNames.Clear();
+        _gameLoop.Stop();
+    }
+ 
     private void OnGameTick(double dt)
     {
-        // Supprimer les entités mortes (HP <= 0)
         foreach (var id in CreatedEntities.ToList())
         {
             var hp = _entityManager.GetEntityrHp(id);
@@ -123,7 +126,7 @@ public partial class MainWindow
                 RemoveEntity(id);
             }
         }
-        
+ 
         var player1 = FindEntityByName("Player1");
         var player2 = FindEntityByName("Player2");
         if (player1 != null)
@@ -136,13 +139,33 @@ public partial class MainWindow
                 Console.WriteLine($"Player1 position: {pos.Value.X},{pos.Value.Y}");
             }
 
-            MoveEntity(player1.Id, 20 * dt , 0);
-        }
+            MoveEntity(player1.Id, 20 * dt, 0);
 
+            // Exemple : créer une tâche nommée depuis OnGameTick (créée une seule fois)
+            if (!_scheduledTaskNames.Contains("tick-demo", StringComparer.OrdinalIgnoreCase))
+            {
+                if (_gameLoop.Schedule("tick-demo", () =>
+                    {
+                        Console.WriteLine("[tick-demo] tâche périodique déclenchée depuis OnGameTick");
+                    }, intervalSeconds: 3.0, repeat: true))
+                {
+                    _scheduledTaskNames.Add("tick-demo");
+                }
+            }
+
+            // Exemple : annuler une tâche nommée selon une condition (HP <= 50 ici)
+            if (player1.Hp <= 50 && _scheduledTaskNames.Contains("tick-demo", StringComparer.OrdinalIgnoreCase))
+            {
+                if (_gameLoop.CancelScheduled("tick-demo"))
+                {
+                    _scheduledTaskNames.RemoveAll(n => string.Equals(n, "tick-demo", StringComparison.OrdinalIgnoreCase));
+                }
+            }
+        }
+        
         if (player2 != null)
         {
             SetEntityPosition(player2.Id, 300, 200);
         }
     }
-  }
-
+}
