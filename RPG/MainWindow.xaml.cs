@@ -25,11 +25,11 @@ public partial class MainWindow
     //pos.X , pos.Y
     private Point? GetEntityPosition(Guid entityId) => _entityManager.GetEntityPosition(entityId);
     
-    // Positionne l'entitée à la position absolue (x,y) en pixels; retourne True si réussite ou False si l'id n'existe pas
-    private bool SetEntityPosition(Guid entityId, double x, double y) => _entityManager.SetEntityPosition(entityId, x, y);
+    // Positionne l'entitée à la position absolue (x,y) en pixels
+    private void SetEntityPosition(Guid entityId, double x, double y) => _entityManager.SetEntityPosition(entityId, x, y);
     
-    // Supprime l'entitée retourne; True si réussite ou False si l'id n'existe pas
-    private bool RemoveEntity(Guid entityId) => _entityManager.RemoveEntity(entityId);
+    // Supprime l'entitée
+    private void RemoveEntity(Guid entityId) => _entityManager.RemoveEntity(entityId);
     
     // Renvoie les points de vie int (HP) de l'entitée ou null si l'id n'existe pas
     private int? GetEntityrHp(Guid entityId) => _entityManager.GetEntityrHp(entityId);
@@ -114,33 +114,35 @@ public partial class MainWindow
 
     private void OnGameTick(double dt)
     {
-        // Ex : Obtenir l'id d'une entité par son nom
+        // Supprimer les entités mortes (HP <= 0)
+        foreach (var id in CreatedEntities.ToList())
+        {
+            var hp = _entityManager.GetEntityrHp(id);
+            if (hp.HasValue && hp.Value <= 0)
+            {
+                RemoveEntity(id);
+            }
+        }
+        
         var player1 = FindEntityByName("Player1");
         var player2 = FindEntityByName("Player2");
         if (player1 != null)
         {
-            //code ici si l'entité a été trouvée
-            //Ex : Afficher les PV dans la console
             Console.WriteLine($"Player1 Hp: {player1.Hp}");
+
+            var pos = GetEntityPosition(player1.Id);
+            if (pos != null)
+            {
+                Console.WriteLine($"Player1 position: {pos.Value.X},{pos.Value.Y}");
+            }
+
+            MoveEntity(player1.Id, 20 * dt , 0);
         }
 
-
-        //Ex : Obtenir les coordonées d'une entité avec son id
-        var pos = GetEntityPosition(player1!.Id);
-        if (pos != null)
+        if (player2 != null)
         {
-            //code ici si la position a été trouvée
-            //Ex : Afficher les coordonnées dans la console
-            Console.WriteLine($"Player1 position: {pos?.X},{pos?.Y}");
+            SetEntityPosition(player2.Id, 300, 200);
         }
-
-        //Ex : Déplacer une entité avec son id
-        MoveEntity(player1!.Id, 20 * dt , 0);
-
-        //Ex : Déplacer une entité a une position absolue
-        SetEntityPosition(player2!.Id, 300, 200);
-
-
     }
   }
 

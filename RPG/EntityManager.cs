@@ -21,13 +21,11 @@ public sealed class EntityManager
     public Guid? LastCreatedEntityId => _lastCreatedEntityId;
     public IReadOnlyList<Guid> CreatedEntities => _createdEntities;
 
-    public record EntityHandle(Guid Id,
-        string? Name,
-        FrameworkElement Root,
-        Image Image,
-        TextBlock HpText,
-        TranslateTransform Transform,
-        int Hp);
+    public sealed class EntityHandle
+    {
+        public Guid Id { get; init; }
+        public int Hp { get; init; }
+    }
 
     private sealed class EntityInfo
     {
@@ -44,6 +42,7 @@ public sealed class EntityManager
         if (entityTexture == null) throw new ArgumentNullException(nameof(entityTexture));
         if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
         if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+        if (entityHp <= 0) throw new ArgumentOutOfRangeException(nameof(height));
         if (name != null && name.Length == 0) name = null;
 
         var bitmap = new BitmapImage();
@@ -146,6 +145,11 @@ public sealed class EntityManager
             _entitiesLayer.Children.Remove(info.Root);
         }
         _entities.Remove(entityId);
+        if (info.Name != null)
+        {
+            _entityByName.Remove(info.Name);
+        }
+        _createdEntities.Remove(entityId);
         if (_lastCreatedEntityId == entityId) _lastCreatedEntityId = null;
         return true;
     }
@@ -176,7 +180,6 @@ public sealed class EntityManager
         var id = FindEntityIdByName(name);
         if (id == null) return null;
         if (!_entities.TryGetValue(id.Value, out var info)) return null;
-        return new EntityHandle(id.Value, info.Name, info.Root, info.Image, info.HpText, info.Transform, info.Hp);
+        return new EntityHandle { Id = id.Value, Hp = info.Hp };
     }
 }
-
