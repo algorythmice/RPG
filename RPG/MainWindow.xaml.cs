@@ -17,7 +17,7 @@ public partial class MainWindow
     /// La méthode instancie un Image, lui applique un TranslateTransform pour faciliter les déplacements en runtime.
     /// Retourne l'identifiant (Guid) du joueur créé. Utilisez cet id pour appeler MoveEntity(id,...) ou SetEntityHp(id,...).
     /// </summary>
-    private Guid CreateEntity(Uri entityTexture, int width, int height, double x, double y, int entityHp, string? name = null) => _entityManager.CreateEntity(entityTexture, width, height, x, y, entityHp, name);
+    private Guid CreateEntity(Uri entityTexture, int width, int height, double x, double y, int entityHp, bool hasSpeech,string name) => _entityManager.CreateEntity(entityTexture, width, height, x, y, entityHp, hasSpeech, name);
 
     // Renvoie la position de l'entitée sous la forme d'un Point (X,Y) ou null si l'id n'existe pas
     //EX:
@@ -43,6 +43,12 @@ public partial class MainWindow
     
     // Recherche l'entitée par son nom; retourne null si non trouvée
     private EntityManager.EntityHandle? FindEntityByName(string name) => _entityManager.FindEntityByName(name);
+    
+    private string? ShowEntitySpeech(Guid entityId, string text) => _entityManager.ShowEntitySpeech(entityId, text);
+
+    private bool HideEntitySpeech(Guid entityId, string text) => _entityManager.HideEntitySpeech(entityId);
+
+    private string? GetEntitySpeechText(Guid entityId) => _entityManager.GetEntitySpeechText(entityId);
     
     // Génère les tuiles du terrain en appelant la méthode de TerrainGeneration
     private static void GenerateTiles(
@@ -84,17 +90,17 @@ public partial class MainWindow
         _gameLoop.Start();
 
         var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-        var imagesDir = Path.Combine(exeDir, "Images");
+        var assetsDir = Path.Combine(exeDir, "Images");
 
-        var grassTexture = Path.Combine(imagesDir, "tile_grass.png");
-        var entityTexture = Path.Combine(imagesDir, "player.png");
+        var grassTexture = Path.Combine(assetsDir, "tile_grass.png");
+        var entityTexture = Path.Combine(assetsDir, "player.png");
 
         GenerateTiles(10, 8, 64, new Uri(grassTexture, UriKind.Absolute), TilesLayer, GameCanvas);
 
         if (File.Exists(entityTexture))
         {
-            var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 100, 100, 120, name: "Player1");
-            var entityId2 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, name: "Player2");
+            var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 100, 100, 120, true, "player");
+            var entityId2 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, false,  "Player2");
 
             SetEntityHp(entityId1, 90);
             MoveEntity(entityId2, 32, 0);
@@ -120,23 +126,23 @@ public partial class MainWindow
     {
         foreach (var id in CreatedEntities.ToList())
         {
-            var hp = _entityManager.GetEntityrHp(id);
+            var hp = GetEntityrHp(id);
             if (hp.HasValue && hp.Value <= 0)
             {
                 RemoveEntity(id);
             }
         }
- 
-        var player1 = FindEntityByName("Player1");
+
+        var player1 = FindEntityByName("player");
         var player2 = FindEntityByName("Player2");
         if (player1 != null)
         {
-            Console.WriteLine($"Player1 Hp: {player1.Hp}");
+            //Console.WriteLine($"Player1 Hp: {player1.Hp}");
 
             var pos = GetEntityPosition(player1.Id);
             if (pos != null)
             {
-                Console.WriteLine($"Player1 position: {pos.Value.X},{pos.Value.Y}");
+                //Console.WriteLine($"Player1 position: {pos.Value.X},{pos.Value.Y}");
             }
 
             MoveEntity(player1.Id, 20 * dt, 0);
@@ -146,7 +152,7 @@ public partial class MainWindow
             {
                 if (_gameLoop.Schedule("tick-demo", () =>
                     {
-                        Console.WriteLine("[tick-demo] tâche périodique déclenchée depuis OnGameTick");
+                        ShowEntitySpeech(player1.Id, "text2");
                     }, intervalSeconds: 3.0, repeat: true))
                 {
                     _scheduledTaskNames.Add("tick-demo");

@@ -1,0 +1,14 @@
+﻿{
+  "speeches": [
+    {
+      "id": "text1",
+      "text": "Ceci est le texte du premier speech.",
+      "quest": "Quelle est la question associée au premier speech ?"
+    },
+    {
+      "id": "text2",
+      "text": "Ceci est le texte du deuxième speech.",
+      "quest": "Quelle est la question associée au deuxième speech ?"
+    }
+  ]
+}

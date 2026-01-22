@@ -1,4 +1,4 @@
-﻿using System.Windows;
+﻿﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -8,14 +8,16 @@ namespace RPG;
 public sealed class EntityManager
 {
     private readonly Panel _entitiesLayer;
+    private readonly SpeechManager? _speechManager;
     private readonly Dictionary<Guid, EntityInfo> _entities = new();
     private readonly Dictionary<string, Guid> _entityByName = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<Guid> _createdEntities = new();
     private Guid? _lastCreatedEntityId;
 
-    public EntityManager(Panel entitiesLayer)
+    public EntityManager(Panel entitiesLayer, SpeechManager? speechManager = null)
     {
         _entitiesLayer = entitiesLayer ?? throw new ArgumentNullException(nameof(entitiesLayer));
+        _speechManager = speechManager ?? new SpeechManager(this);
     }
 
     public Guid? LastCreatedEntityId => _lastCreatedEntityId;
@@ -25,6 +27,7 @@ public sealed class EntityManager
     {
         public Guid Id { get; init; }
         public int Hp { get; init; }
+        public required string Name { get; init; }
     }
 
     private sealed class EntityInfo
@@ -34,16 +37,24 @@ public sealed class EntityManager
         public required TextBlock HpText { get; init; }
         public required TranslateTransform Transform { get; init; }
         public int Hp { get; set; }
-        public string? Name { get; init; }
+        public required string Name { get; init; }
+        public bool HasSpeech { get; init; }
     }
 
-    public Guid CreateEntity(Uri entityTexture, int width, int height, double x, double y, int entityHp, string? name = null)
+    public Guid CreateEntity(
+        Uri entityTexture, 
+        int width, 
+        int height, 
+        double x, 
+        double y, 
+        int entityHp, 
+        bool hasSpeech,
+        string name)
     {
         if (entityTexture == null) throw new ArgumentNullException(nameof(entityTexture));
         if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
         if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
         if (entityHp <= 0) throw new ArgumentOutOfRangeException(nameof(height));
-        if (name != null && name.Length == 0) name = null;
 
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
@@ -100,15 +111,20 @@ public sealed class EntityManager
             Transform = tt,
             Hp = entityHp,
             Name = name,
+            HasSpeech = hasSpeech,
         };
         _entities[id] = info;
 
+        if (hasSpeech && _speechManager != null)
+        {
+            _speechManager.RegisterEntity(id, container, tt, width, x, y);
+        }
+
         _lastCreatedEntityId = id;
         _createdEntities.Add(id);
-        if (name != null)
-        {
-            _entityByName[name] = id;
-        }
+        
+        _entityByName[name] = id;
+        
         return id;
     }
 
@@ -134,6 +150,10 @@ public sealed class EntityManager
         Canvas.SetTop(info.Root, y);
         info.Transform.X = 0;
         info.Transform.Y = 0;
+        if (info.HasSpeech)
+        {
+            _speechManager?.UpdatePosition(entityId);
+        }
         return true;
     }
 
@@ -145,9 +165,11 @@ public sealed class EntityManager
             _entitiesLayer.Children.Remove(info.Root);
         }
         _entities.Remove(entityId);
-        if (info.Name != null)
+        _entityByName.Remove(info.Name);
+        
+        if (info.HasSpeech)
         {
-            _entityByName.Remove(info.Name);
+            _speechManager?.RemoveSpeech(entityId);
         }
         _createdEntities.Remove(entityId);
         if (_lastCreatedEntityId == entityId) _lastCreatedEntityId = null;
@@ -159,6 +181,10 @@ public sealed class EntityManager
         if (!_entities.TryGetValue(entityId, out var info)) return;
         info.Transform.X += dx;
         info.Transform.Y += dy;
+        if (info.HasSpeech)
+        {
+            _speechManager?.UpdatePosition(entityId);
+        }
     }
 
     public void SetEntityHp(Guid entityId, int hp)
@@ -167,6 +193,27 @@ public sealed class EntityManager
         info.Hp = hp;
         info.HpText.Text = info.Hp.ToString();
         info.Image.Opacity = info.Hp > 0 ? 1.0 : 0.5;
+    }
+ 
+    public string? ShowEntitySpeech(Guid entityId, string idSpeech)
+    {
+        if (!_entities.TryGetValue(entityId, out var info)) return null;
+        if (!info.HasSpeech) return null;
+        return _speechManager?.ShowSpeech(entityId, idSpeech) ?? null;
+    }
+
+    public bool HideEntitySpeech(Guid entityId)
+    {
+        if (!_entities.TryGetValue(entityId, out var info)) return false;
+        if (!info.HasSpeech) return false;
+        return _speechManager?.HideSpeech(entityId) ?? false;
+    }
+
+    public string? GetEntitySpeechText(Guid entityId)
+    {
+        if (!_entities.TryGetValue(entityId, out var info)) return null;
+        if (!info.HasSpeech) return null;
+        return _speechManager?.GetSpeechText(entityId);
     }
 
     private Guid? FindEntityIdByName(string name)
@@ -180,6 +227,13 @@ public sealed class EntityManager
         var id = FindEntityIdByName(name);
         if (id == null) return null;
         if (!_entities.TryGetValue(id.Value, out var info)) return null;
-        return new EntityHandle { Id = id.Value, Hp = info.Hp };
+        return new EntityHandle { Id = id.Value, Hp = info.Hp , Name = info.Name };
+    }
+    
+    public EntityHandle? FindEntityById(Guid? id)
+    {
+        if (id == null) return null;
+        if (!_entities.TryGetValue(id.Value, out var info)) return null;
+        return new EntityHandle { Id = id.Value, Hp = info.Hp , Name = info.Name };
     }
 }
