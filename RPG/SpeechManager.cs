@@ -26,9 +26,9 @@ public sealed class SpeechManager
         _speeches[entityId] = new SpeechInfo { CurrentText = null };
     }
     
-    public string? ShowSpeech(Guid entityId, string idSearch)
+    public string? ShowSpeech(Guid entityId, string idSpeech)
     {
-        if (idSearch == null) throw new ArgumentNullException(nameof(idSearch));
+        if (idSpeech == null) throw new ArgumentNullException(nameof(idSpeech));
         if (!_speeches.TryGetValue(entityId, out var info)) return null;
         
         var entity = FindEntityById(entityId);
@@ -49,7 +49,7 @@ public sealed class SpeechManager
             {
                 foreach (var speech in speeches.EnumerateArray())
                 {
-                    if (speech.GetProperty("id").GetString() == idSearch)
+                    if (speech.GetProperty("id").GetString() == idSpeech)
                     {
                         text = speech.GetProperty("text").GetString();
                         break;

@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 
 namespace RPG;
@@ -17,7 +18,24 @@ public partial class MainWindow
     /// La méthode instancie un Image, lui applique un TranslateTransform pour faciliter les déplacements en runtime.
     /// Retourne l'identifiant (Guid) du joueur créé. Utilisez cet id pour appeler MoveEntity(id,...) ou SetEntityHp(id,...).
     /// </summary>
-    private Guid CreateEntity(Uri entityTexture, int width, int height, double x, double y, int entityHp, bool hasSpeech,string name) => _entityManager.CreateEntity(entityTexture, width, height, x, y, entityHp, hasSpeech, name);
+    private Guid CreateEntity(
+        Uri entityTexture, 
+        int width, 
+        int height, 
+        double x, 
+        double y, 
+        int entityHp, 
+        bool hasSpeech,
+        string name) 
+        => _entityManager.CreateEntity(
+            entityTexture, 
+            width, 
+            height, 
+            x, 
+            y, 
+            entityHp, 
+            hasSpeech, 
+            name);
 
     // Renvoie la position de l'entitée sous la forme d'un Point (X,Y) ou null si l'id n'existe pas
     //EX:
@@ -44,9 +62,9 @@ public partial class MainWindow
     // Recherche l'entitée par son nom; retourne null si non trouvée
     private EntityManager.EntityHandle? FindEntityByName(string name) => _entityManager.FindEntityByName(name);
     
-    private string? ShowEntitySpeech(Guid entityId, string text) => _entityManager.ShowEntitySpeech(entityId, text);
+    private string? ShowEntitySpeech(Guid entityId, string idSpeech) => _entityManager.ShowEntitySpeech(entityId, idSpeech);
 
-    private bool HideEntitySpeech(Guid entityId, string text) => _entityManager.HideEntitySpeech(entityId);
+    private bool HideEntitySpeech(Guid entityId) => _entityManager.HideEntitySpeech(entityId);
 
     private string? GetEntitySpeechText(Guid entityId) => _entityManager.GetEntitySpeechText(entityId);
     
@@ -80,10 +98,17 @@ public partial class MainWindow
     public Guid? LastCreatedEntityId => _entityManager.LastCreatedEntityId;
     public IReadOnlyList<Guid> CreatedEntities => _entityManager.CreatedEntities;
     private readonly List<string> _scheduledTaskNames = new();
+    
+    private readonly HashSet<Key> _keysDown = new();
 
     public MainWindow()
     {
         InitializeComponent();
+        
+        KeyDown += OnKeyDown;
+        KeyUp += OnKeyUp;
+        Focusable = true;
+        Focus();
 
         _entityManager = new EntityManager(EntitiesLayer);
         _gameLoop.Register(OnGameTick);
@@ -99,17 +124,29 @@ public partial class MainWindow
 
         if (File.Exists(entityTexture))
         {
-            var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 100, 100, 120, true, "player");
-            var entityId2 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, false,  "Player2");
+            var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 100, 100, 120, true, "Npc1");
+            // le nom player est relié au nom du fichier json pour faire corespondre les dialogues
+            var entityId2 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, false,  "Player1");
 
             SetEntityHp(entityId1, 90);
-            MoveEntity(entityId2, 32, 0);
+            SetEntityPosition(entityId2, 300 , 200);
 
             var pos1 = GetEntityPosition(entityId1);
             var hp2 = GetEntityrHp(entityId2);
             Console.WriteLine($"Entity1 position: {pos1?.X},{pos1?.Y} ; Entity2 HP: {hp2}");
         }
     }
+    
+    private void OnKeyDown(object sender, KeyEventArgs e)
+    {
+        _keysDown.Add(e.Key);
+    }
+
+    private void OnKeyUp(object sender, KeyEventArgs e)
+    {
+        _keysDown.Remove(e.Key);
+    }
+
     
     protected override void OnClosed(EventArgs e)
     {
@@ -123,37 +160,57 @@ public partial class MainWindow
     }
  
     private void OnGameTick(double dt)
-    {
-        foreach (var id in CreatedEntities.ToList())
+    {   
+        
+        var npc1 = FindEntityByName("Npc1");
+        var player1 = FindEntityByName("Player1");
+        if (npc1 != null && player1 != null)
         {
-            var hp = GetEntityrHp(id);
-            if (hp.HasValue && hp.Value <= 0)
-            {
-                RemoveEntity(id);
-            }
-        }
+        
+            double speed = 200 * dt;
 
-        var player1 = FindEntityByName("player");
-        var player2 = FindEntityByName("Player2");
-        if (player1 != null)
-        {
+            if (_keysDown.Contains(Key.Z))
+                MoveEntity(player1.Id, 0, -speed);
+            if (_keysDown.Contains(Key.S))
+                MoveEntity(player1.Id, 0, speed);
+            if (_keysDown.Contains(Key.Q))
+                MoveEntity(player1.Id, -speed, 0);
+            if (_keysDown.Contains(Key.D))
+                MoveEntity(player1.Id, speed, 0);
+            
+            foreach (var id in CreatedEntities.ToList())
+            {
+                var hp = GetEntityrHp(id);
+                if (hp.HasValue && hp.Value <= 0)
+                {
+                    RemoveEntity(id);
+                }
+            }
+            
             //Console.WriteLine($"Player1 Hp: {player1.Hp}");
 
-            var pos = GetEntityPosition(player1.Id);
+            var pos = GetEntityPosition(npc1.Id);
             if (pos != null)
             {
                 //Console.WriteLine($"Player1 position: {pos.Value.X},{pos.Value.Y}");
             }
 
-            MoveEntity(player1.Id, 20 * dt, 0);
+            MoveEntity(npc1.Id, 5 * dt, 0);
 
             // Exemple : créer une tâche nommée depuis OnGameTick (créée une seule fois)
             if (!_scheduledTaskNames.Contains("tick-demo", StringComparer.OrdinalIgnoreCase))
             {
                 if (_gameLoop.Schedule("tick-demo", () =>
                     {
-                        ShowEntitySpeech(player1.Id, "text2");
-                    }, intervalSeconds: 3.0, repeat: true))
+                        ShowEntitySpeech(npc1.Id, "text2");
+                        //cette fonction permet d'afficher le text2 de l'entitée player
+                        var hp = GetEntityrHp(npc1.Id);
+                        if (hp.HasValue)
+                        {
+                            SetEntityHp(npc1.Id, hp.Value - 10);
+                        }
+                        
+                    }, intervalSeconds: 1.0, repeat: true))
                 {
                     _scheduledTaskNames.Add("tick-demo");
                 }
@@ -167,11 +224,6 @@ public partial class MainWindow
                     _scheduledTaskNames.RemoveAll(n => string.Equals(n, "tick-demo", StringComparison.OrdinalIgnoreCase));
                 }
             }
-        }
-        
-        if (player2 != null)
-        {
-            SetEntityPosition(player2.Id, 300, 200);
         }
     }
 }
