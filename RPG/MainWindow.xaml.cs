@@ -100,11 +100,16 @@ public partial class MainWindow
     private readonly List<string> _scheduledTaskNames = new();
     
     private readonly HashSet<Key> _keysDown = new();
+    private bool _isFullscreen;
+    private WindowStyle _savedWindowStyle;
+    private ResizeMode _savedResizeMode;
+    private WindowState _savedWindowState;
 
     public MainWindow()
     {
         InitializeComponent();
         
+        // Démarre en fenêtre classique avec chrome standard; bascule en plein écran via F11
         KeyDown += OnKeyDown;
         KeyUp += OnKeyUp;
         Focusable = true;
@@ -113,14 +118,14 @@ public partial class MainWindow
         _entityManager = new EntityManager(EntitiesLayer);
         _gameLoop.Register(OnGameTick);
         _gameLoop.Start();
-
+        
         var exeDir = AppDomain.CurrentDomain.BaseDirectory;
         var assetsDir = Path.Combine(exeDir, "Images");
 
         var grassTexture = Path.Combine(assetsDir, "tile_grass.png");
         var entityTexture = Path.Combine(assetsDir, "player.png");
 
-        GenerateTiles(10, 8, 64, new Uri(grassTexture, UriKind.Absolute), TilesLayer, GameCanvas);
+        GenerateTiles(30, 17, 64, new Uri(grassTexture, UriKind.Absolute), GroundLayer, GameCanvas);
 
         if (File.Exists(entityTexture))
         {
@@ -139,6 +144,12 @@ public partial class MainWindow
     
     private void OnKeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.F11)
+        {
+            ToggleFullscreen();
+            e.Handled = true;
+            return;
+        }
         _keysDown.Add(e.Key);
     }
 
@@ -147,6 +158,27 @@ public partial class MainWindow
         _keysDown.Remove(e.Key);
     }
 
+    private void ToggleFullscreen()
+    {
+        if (!_isFullscreen)
+        {
+            _savedWindowStyle = WindowStyle;
+            _savedResizeMode = ResizeMode;
+            _savedWindowState = WindowState;
+
+            WindowStyle = WindowStyle.None;
+            ResizeMode = ResizeMode.NoResize;
+            WindowState = WindowState.Maximized;
+            _isFullscreen = true;
+        }
+        else
+        {
+            WindowStyle = _savedWindowStyle;
+            ResizeMode = _savedResizeMode;
+            WindowState = _savedWindowState;
+            _isFullscreen = false;
+        }
+    }
     
     protected override void OnClosed(EventArgs e)
     {
@@ -164,65 +196,63 @@ public partial class MainWindow
         
         var npc1 = FindEntityByName("Npc1");
         var player1 = FindEntityByName("Player1");
-        if (npc1 != null && player1 != null)
-        {
         
-            double speed = 200 * dt;
+        
+        double speed = 200 * dt;
 
-            if (_keysDown.Contains(Key.Z))
-                MoveEntity(player1.Id, 0, -speed);
-            if (_keysDown.Contains(Key.S))
-                MoveEntity(player1.Id, 0, speed);
-            if (_keysDown.Contains(Key.Q))
-                MoveEntity(player1.Id, -speed, 0);
-            if (_keysDown.Contains(Key.D))
-                MoveEntity(player1.Id, speed, 0);
+        if (_keysDown.Contains(Key.Z))
+            MoveEntity(player1.Id, 0, -speed);
+        if (_keysDown.Contains(Key.S))
+            MoveEntity(player1.Id, 0, speed);
+        if (_keysDown.Contains(Key.Q))
+            MoveEntity(player1.Id, -speed, 0);
+        if (_keysDown.Contains(Key.D))
+            MoveEntity(player1.Id, speed, 0);
             
-            foreach (var id in CreatedEntities.ToList())
+        foreach (var id in CreatedEntities.ToList())
+        {
+            var hp = GetEntityrHp(id);
+            if (hp.HasValue && hp.Value <= 0)
             {
-                var hp = GetEntityrHp(id);
-                if (hp.HasValue && hp.Value <= 0)
-                {
-                    RemoveEntity(id);
-                }
+                RemoveEntity(id);
             }
+        }
             
             //Console.WriteLine($"Player1 Hp: {player1.Hp}");
 
-            var pos = GetEntityPosition(npc1.Id);
-            if (pos != null)
-            {
+        var pos = GetEntityPosition(npc1.Id);
+        if (pos != null)
+        {
                 //Console.WriteLine($"Player1 position: {pos.Value.X},{pos.Value.Y}");
-            }
+        }
 
-            MoveEntity(npc1.Id, 5 * dt, 0);
+        MoveEntity(npc1.Id, 5 * dt, 0);
 
-            // Exemple : créer une tâche nommée depuis OnGameTick (créée une seule fois)
-            if (!_scheduledTaskNames.Contains("tick-demo", StringComparer.OrdinalIgnoreCase))
-            {
-                if (_gameLoop.Schedule("tick-demo", () =>
+        // Exemple : créer une tâche nommée depuis OnGameTick (créée une seule fois)
+        if (!_scheduledTaskNames.Contains("tick-demo", StringComparer.OrdinalIgnoreCase))
+        {
+            if (_gameLoop.Schedule("tick-demo", () =>
+                {
+                    ShowEntitySpeech(npc1.Id, "text2");
+                    //cette fonction permet d'afficher le text2 de l'entitée player
+                    var hp = GetEntityrHp(npc1.Id);
+                    if (hp.HasValue)
                     {
-                        ShowEntitySpeech(npc1.Id, "text2");
-                        //cette fonction permet d'afficher le text2 de l'entitée player
-                        var hp = GetEntityrHp(npc1.Id);
-                        if (hp.HasValue)
-                        {
-                            SetEntityHp(npc1.Id, hp.Value - 10);
-                        }
+                        SetEntityHp(npc1.Id, hp.Value - 10);
+                    }
                         
-                    }, intervalSeconds: 1.0, repeat: true))
-                {
-                    _scheduledTaskNames.Add("tick-demo");
-                }
-            }
-
-            // Exemple : annuler une tâche nommée selon une condition (HP <= 50 ici)
-            if (player1.Hp <= 50 && _scheduledTaskNames.Contains("tick-demo", StringComparer.OrdinalIgnoreCase))
+                }, intervalSeconds: 1.0, repeat: true))
             {
-                if (_gameLoop.CancelScheduled("tick-demo"))
-                {
-                    _scheduledTaskNames.RemoveAll(n => string.Equals(n, "tick-demo", StringComparison.OrdinalIgnoreCase));
-                }
+                _scheduledTaskNames.Add("tick-demo");
+            }
+        }
+
+        // Exemple : annuler une tâche nommée selon une condition (HP <= 50 ici)
+        if (player1.Hp <= 50 && _scheduledTaskNames.Contains("tick-demo", StringComparer.OrdinalIgnoreCase))
+        {
+            if (_gameLoop.CancelScheduled("tick-demo"))
+            {
+                _scheduledTaskNames.RemoveAll(n => string.Equals(n, "tick-demo", StringComparison.OrdinalIgnoreCase));
             }
         }
     }

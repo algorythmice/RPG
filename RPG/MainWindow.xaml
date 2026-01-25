@@ -7,8 +7,10 @@
         Title="MainWindow" Height="450" Width="800">
     <Grid>
         <Canvas x:Name="GameCanvas" Background="Black" ClipToBounds="True">
-            <!-- Layer pour les tuiles (en dessous) -->
-            <Canvas x:Name="TilesLayer" Panel.ZIndex="0" />
+            <!-- Layer pour le sol -->
+            <Canvas x:Name="GroundLayer" Panel.ZIndex="0" />
+            
+            <!--<Canvas x:Name="TilesLayer" Panel.ZIndex="0" /> -->
 
             <!-- Layer pour les entités (joueur, ennemis) : placé au-dessus des tuiles -->
             <Canvas x:Name="EntitiesLayer" Panel.ZIndex="1" />
