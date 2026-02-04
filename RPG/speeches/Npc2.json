@@ -1,0 +1,14 @@
+﻿{
+  "speeches": [
+    {
+      "id": "text1",
+      "text": "Coucou c'est Enzo le flan",
+      "quest": "Jsp pk j'ai mis ça"
+    },
+    {
+      "id": "text2",
+      "text": "Ceci est le texte du deuxième speech.",
+      "quest": "Quelle est la question associée au deuxième speech ?"
+    }
+  ]
+}

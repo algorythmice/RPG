@@ -133,6 +133,7 @@ public partial class MainWindow
             var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 100, 100, 120, true, "Npc1");
             // le nom player est relié au nom du fichier json pour faire corespondre les dialogues
             var entityId2 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, false,  "Player1");
+            var entityId3 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 100, 100, 120, true, "Npc2");
 
             SetEntityHp(entityId1, 90);
             SetEntityPosition(entityId2, 300 , 200);
@@ -196,8 +197,9 @@ public partial class MainWindow
     {   
         
         var npc1 = FindEntityByName("Npc1");
+        var npc2 = FindEntityByName("Npc2");
         var player1 = FindEntityByName("Player1");
-        
+        ShowEntitySpeech(npc2.Id, "text1");
         
         double speed = 200 * dt;
 
