@@ -110,6 +110,7 @@ public partial class MainWindow
         InitializeComponent();
         
         // Démarre en fenêtre classique avec chrome standard; bascule en plein écran via F11
+        //ligne
         KeyDown += OnKeyDown;
         KeyUp += OnKeyUp;
         Focusable = true;
