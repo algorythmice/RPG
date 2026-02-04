@@ -110,7 +110,6 @@ public partial class MainWindow
         InitializeComponent();
         
         // Démarre en fenêtre classique avec chrome standard; bascule en plein écran via F11
-        //ligne
         KeyDown += OnKeyDown;
         KeyUp += OnKeyUp;
         Focusable = true;
@@ -125,7 +124,8 @@ public partial class MainWindow
 
         var grassTexture = Path.Combine(assetsDir, "tile_grass.png");
         var entityTexture = Path.Combine(assetsDir, "player.png");
-
+        var entityTexture2 = Path.Combine(assetsDir, "player2.png");
+        
         GenerateTiles(30, 17, 64, new Uri(grassTexture, UriKind.Absolute), GroundLayer, GameCanvas);
 
         if (File.Exists(entityTexture))
@@ -133,7 +133,8 @@ public partial class MainWindow
             var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 100, 100, 120, true, "Npc1");
             // le nom player est relié au nom du fichier json pour faire corespondre les dialogues
             var entityId2 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, false,  "Player1");
-            var entityId3 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 100, 100, 120, true, "Npc2");
+            
+            var entityId3 = CreateEntity(new Uri(entityTexture2, UriKind.Absolute), 64, 64, 100, 100, 120, true, "Npc2");
 
             SetEntityHp(entityId1, 90);
             SetEntityPosition(entityId2, 300 , 200);
