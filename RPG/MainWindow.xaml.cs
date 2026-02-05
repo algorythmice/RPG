@@ -10,7 +10,7 @@ public partial class MainWindow
 {
     
     /// <summary>
-    /// Crée un joueur (Image) dans le calque EntitiesLayer et le place au-dessus des tuiles.
+    /// Crée un joueur (Image) dans le calque EntitiesLayer et le place par-dessus des tuiles.
     /// - entityTexture : Uri vers l'image du joueur (file:// ou pack://)
     /// - width/height : dimensions du sprite joueur
     /// - x/y : position initiale en pixels depuis le coin supérieur gauche du GameCanvas
@@ -108,8 +108,9 @@ public partial class MainWindow
     public MainWindow()
     {
         InitializeComponent();
+        WindowState = WindowState.Maximized;
         
-        // Démarre en fenêtre classique avec chrome standard; bascule en plein écran via F11
+        // Démarre en fenêtre classique standard; bascule en plein écran via F11
         KeyDown += OnKeyDown;
         KeyUp += OnKeyUp;
         Focusable = true;
@@ -193,15 +194,11 @@ public partial class MainWindow
         _scheduledTaskNames.Clear();
         _gameLoop.Stop();
     }
- 
+
     private void OnGameTick(double dt)
-    {   
-        
-        var npc1 = FindEntityByName("Npc1");
-        var npc2 = FindEntityByName("Npc2");
+    {
         var player1 = FindEntityByName("Player1");
-        ShowEntitySpeech(npc2.Id, "text1");
-        
+
         double speed = 200 * dt;
 
         if (_keysDown.Contains(Key.Z))
@@ -212,51 +209,13 @@ public partial class MainWindow
             MoveEntity(player1.Id, -speed, 0);
         if (_keysDown.Contains(Key.D))
             MoveEntity(player1.Id, speed, 0);
-            
+                   
         foreach (var id in CreatedEntities.ToList())
         {
             var hp = GetEntityrHp(id);
             if (hp.HasValue && hp.Value <= 0)
             {
                 RemoveEntity(id);
-            }
-        }
-            
-            //Console.WriteLine($"Player1 Hp: {player1.Hp}");
-
-        var pos = GetEntityPosition(npc1.Id);
-        if (pos != null)
-        {
-                //Console.WriteLine($"Player1 position: {pos.Value.X},{pos.Value.Y}");
-        }
-
-        MoveEntity(npc1.Id, 5 * dt, 0);
-
-        // Exemple : créer une tâche nommée depuis OnGameTick (créée une seule fois)
-        if (!_scheduledTaskNames.Contains("tick-demo", StringComparer.OrdinalIgnoreCase))
-        {
-            if (_gameLoop.Schedule("tick-demo", () =>
-                {
-                    ShowEntitySpeech(npc1.Id, "text2");
-                    //cette fonction permet d'afficher le text2 de l'entitée player
-                    var hp = GetEntityrHp(npc1.Id);
-                    if (hp.HasValue)
-                    {
-                        SetEntityHp(npc1.Id, hp.Value - 10);
-                    }
-                        
-                }, intervalSeconds: 1.0, repeat: true))
-            {
-                _scheduledTaskNames.Add("tick-demo");
-            }
-        }
-
-        // Exemple : annuler une tâche nommée selon une condition (HP <= 50 ici)
-        if (player1.Hp <= 50 && _scheduledTaskNames.Contains("tick-demo", StringComparer.OrdinalIgnoreCase))
-        {
-            if (_gameLoop.CancelScheduled("tick-demo"))
-            {
-                _scheduledTaskNames.RemoveAll(n => string.Equals(n, "tick-demo", StringComparison.OrdinalIgnoreCase));
             }
         }
     }
