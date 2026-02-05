@@ -131,18 +131,12 @@ public partial class MainWindow
 
         if (File.Exists(entityTexture))
         {
-            var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 100, 100, 120, true, "Npc1");
             // le nom player est relié au nom du fichier json pour faire corespondre les dialogues
-            var entityId2 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, false,  "Player1");
-            
-            var entityId3 = CreateEntity(new Uri(entityTexture2, UriKind.Absolute), 64, 64, 100, 100, 120, true, "Npc2");
+            var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, false,  "Player1");
 
             SetEntityHp(entityId1, 90);
-            SetEntityPosition(entityId2, 300 , 200);
 
             var pos1 = GetEntityPosition(entityId1);
-            var hp2 = GetEntityrHp(entityId2);
-            Console.WriteLine($"Entity1 position: {pos1?.X},{pos1?.Y} ; Entity2 HP: {hp2}");
         }
     }
     
