@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:RPG"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800" WindowState="Maximized">
     <Grid>
         <Canvas x:Name="GameCanvas" Background="Black" ClipToBounds="True">
             <!-- Layer pour le sol -->
@@ -15,5 +16,8 @@
             <!-- Layer pour les entités (joueur, ennemis) : placé au-dessus des tuiles -->
             <Canvas x:Name="EntitiesLayer" Panel.ZIndex="1" />
         </Canvas>
+
+        <!-- Menu principal superposé par-dessus le jeu -->
+        <local:Menu x:Name="MainMenu" Panel.ZIndex="10" />
     </Grid>
 </Window>

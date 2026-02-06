@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -109,6 +110,10 @@ public partial class MainWindow
     {
         InitializeComponent();
         WindowState = WindowState.Maximized;
+
+        MainMenu.StartGameRequested += OnStartGameRequested;
+        MainMenu.OptionsRequested += OnOptionsRequested;
+        MainMenu.QuitRequested += OnQuitRequested;
         
         // Démarre en fenêtre classique standard; bascule en plein écran via F11
         KeyDown += OnKeyDown;
@@ -176,6 +181,22 @@ public partial class MainWindow
             WindowState = _savedWindowState;
             _isFullscreen = false;
         }
+    }
+
+    private void OnStartGameRequested(object? sender, EventArgs e)
+    {
+        MainMenu.Visibility = Visibility.Collapsed;
+        Focus();
+    }
+
+    private void OnOptionsRequested(object? sender, EventArgs e)
+    {
+        MessageBox.Show("Les options seront ajoutées ultérieurement.", "Options", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void OnQuitRequested(object? sender, EventArgs e)
+    {
+        Close();
     }
     
     protected override void OnClosed(EventArgs e)
