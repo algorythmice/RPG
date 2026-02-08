@@ -128,14 +128,16 @@ public sealed class EntityManager
         return id;
     }
 
-    public int? GetEntityrHp(Guid entityId)
-    {
-        return _entities.TryGetValue(entityId, out var info) ? info.Hp : null;
+    public int? GetEntityrHp(Guid? entityId)
+    {   
+        if (entityId == null) return null;
+        return _entities.TryGetValue(entityId.Value, out var info) ? info.Hp : null;
     }
 
-    public Point? GetEntityPosition(Guid entityId)
-    {
-        if (!_entities.TryGetValue(entityId, out var info)) return null;
+    public Point? GetEntityPosition(Guid? entityId)
+    {   
+        if (entityId == null) return null;
+        if (!_entities.TryGetValue(entityId.Value, out var info)) return null;
         var left = Canvas.GetLeft(info.Root);
         var top = Canvas.GetTop(info.Root);
         var tx = info.Transform.X;
@@ -143,77 +145,84 @@ public sealed class EntityManager
         return new Point(left + tx, top + ty);
     }
 
-    public bool SetEntityPosition(Guid entityId, double x, double y)
-    {
-        if (!_entities.TryGetValue(entityId, out var info)) return false;
+    public bool SetEntityPosition(Guid? entityId, double x, double y)
+    {   
+        if (entityId == null) return false;
+        if (!_entities.TryGetValue(entityId.Value, out var info)) return false;
         Canvas.SetLeft(info.Root, x);
         Canvas.SetTop(info.Root, y);
         info.Transform.X = 0;
         info.Transform.Y = 0;
         if (info.HasSpeech)
         {
-            _speechManager?.UpdatePosition(entityId);
+            _speechManager?.UpdatePosition(entityId.Value);
         }
         return true;
     }
 
-    public bool RemoveEntity(Guid entityId)
-    {
-        if (!_entities.TryGetValue(entityId, out var info)) return false;
+    public bool RemoveEntity(Guid? entityId)
+    {   
+        if (entityId == null) return false;
+        if (!_entities.TryGetValue(entityId.Value, out var info)) return false;
         if (_entitiesLayer.Children.Contains(info.Root))
         {
             _entitiesLayer.Children.Remove(info.Root);
         }
-        _entities.Remove(entityId);
+        _entities.Remove(entityId.Value);
         _entityByName.Remove(info.Name);
         
         if (info.HasSpeech)
         {
-            _speechManager?.RemoveSpeech(entityId);
+            _speechManager?.RemoveSpeech(entityId.Value);
         }
-        _createdEntities.Remove(entityId);
+        _createdEntities.Remove(entityId.Value);
         if (_lastCreatedEntityId == entityId) _lastCreatedEntityId = null;
         return true;
     }
 
-    public void MoveEntity(Guid entityId, double dx, double dy)
-    {
-        if (!_entities.TryGetValue(entityId, out var info)) return;
-        info.Transform.X += dx;
-        info.Transform.Y += dy;
-        if (info.HasSpeech)
-        {
-            _speechManager?.UpdatePosition(entityId);
-        }
+    public void MoveEntity(Guid? entityId, double dx, double dy)
+    {   
+        if (entityId == null) return;
+            if (!_entities.TryGetValue(entityId.Value, out var info)) return;
+            info.Transform.X += dx;
+            info.Transform.Y += dy;
+            if (info.HasSpeech)
+            {
+                _speechManager?.UpdatePosition(entityId.Value);
+            }
     }
 
-    public void SetEntityHp(Guid entityId, int hp)
+    public void SetEntityHp(Guid? entityId, int hp)
     {
-        if (!_entities.TryGetValue(entityId, out var info)) return;
+        if (entityId == null) return;
+        if (!_entities.TryGetValue(entityId.Value, out var info)) return;
         info.Hp = hp;
         info.HpText.Text = info.Hp.ToString();
         info.Image.Opacity = info.Hp > 0 ? 1.0 : 0.5;
     }
  
-    public string? ShowEntitySpeech(Guid entityId, string idSpeech)
+    public string? ShowEntitySpeech(Guid? entityId, string idSpeech)
     {
-        if (!_entities.TryGetValue(entityId, out var info)) return null;
+        if (entityId == null) return null;
+        if (!_entities.TryGetValue(entityId.Value, out var info)) return null;
         if (!info.HasSpeech) return null;
-        return _speechManager?.ShowSpeech(entityId, idSpeech) ?? null;
+        return _speechManager?.ShowSpeech(entityId.Value, idSpeech) ?? null;
     }
 
-    public bool HideEntitySpeech(Guid entityId)
+    public bool HideEntitySpeech(Guid? entityId)
     {
-        if (!_entities.TryGetValue(entityId, out var info)) return false;
+        if (entityId == null) return false;
+        if (!_entities.TryGetValue(entityId.Value, out var info)) return false;
         if (!info.HasSpeech) return false;
-        return _speechManager?.HideSpeech(entityId) ?? false;
+        return _speechManager?.HideSpeech(entityId.Value) ?? false;
     }
 
-    public string? GetEntitySpeechText(Guid entityId)
+    public string? GetEntitySpeechText(Guid? entityId)
     {
-        if (!_entities.TryGetValue(entityId, out var info)) return null;
+        if (entityId == null) return null;
+        if (!_entities.TryGetValue(entityId.Value, out var info)) return null;
         if (!info.HasSpeech) return null;
-        return _speechManager?.GetSpeechText(entityId);
+        return _speechManager?.GetSpeechText(entityId.Value);
     }
 
     private Guid? FindEntityIdByName(string name)

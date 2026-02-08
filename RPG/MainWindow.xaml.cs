@@ -42,32 +42,32 @@ public partial class MainWindow
     //EX:
     //var pos = GetEntityPosition(entityId);
     //pos.X , pos.Y
-    private Point? GetEntityPosition(Guid entityId) => _entityManager.GetEntityPosition(entityId);
+    private Point? GetEntityPosition(Guid? entityId) => _entityManager.GetEntityPosition(entityId);
     
     // Positionne l'entitée à la position absolue (x,y) en pixels
-    private void SetEntityPosition(Guid entityId, double x, double y) => _entityManager.SetEntityPosition(entityId, x, y);
+    private void SetEntityPosition(Guid? entityId, double x, double y) => _entityManager.SetEntityPosition(entityId, x, y);
     
     // Supprime l'entitée
-    private void RemoveEntity(Guid entityId) => _entityManager.RemoveEntity(entityId);
+    private void RemoveEntity(Guid? entityId) => _entityManager.RemoveEntity(entityId);
     
     // Renvoie les points de vie int (HP) de l'entitée ou null si l'id n'existe pas
-    private int? GetEntityrHp(Guid entityId) => _entityManager.GetEntityrHp(entityId);
+    private int? GetEntityrHp(Guid? entityId) => _entityManager.GetEntityrHp(entityId);
     
     
     // Déplace l'entitée de (dx,dy) pixels; ne fait rien si l'id n'existe pas
-    private void MoveEntity(Guid entityId, double dx, double dy) => _entityManager.MoveEntity(entityId, dx, dy);
+    private void MoveEntity(Guid? entityId, double dx, double dy) => _entityManager.MoveEntity(entityId, dx, dy);
     
     // Définit les points de vie (HP) de l'entitée; ne fait rien si l'id n'existe pas
-    private void SetEntityHp(Guid entityId, int hp) => _entityManager.SetEntityHp(entityId, hp);
+    private void SetEntityHp(Guid? entityId, int hp) => _entityManager.SetEntityHp(entityId, hp);
     
     // Recherche l'entitée par son nom; retourne null si non trouvée
     private EntityManager.EntityHandle? FindEntityByName(string name) => _entityManager.FindEntityByName(name);
     
-    private string? ShowEntitySpeech(Guid entityId, string idSpeech) => _entityManager.ShowEntitySpeech(entityId, idSpeech);
+    private string? ShowEntitySpeech(Guid? entityId, string idSpeech) => _entityManager.ShowEntitySpeech(entityId, idSpeech);
 
-    private bool HideEntitySpeech(Guid entityId) => _entityManager.HideEntitySpeech(entityId);
+    private bool HideEntitySpeech(Guid? entityId) => _entityManager.HideEntitySpeech(entityId);
 
-    private string? GetEntitySpeechText(Guid entityId) => _entityManager.GetEntitySpeechText(entityId);
+    private string? GetEntitySpeechText(Guid? entityId) => _entityManager.GetEntitySpeechText(entityId);
     
     // Génère les tuiles du terrain en appelant la méthode de TerrainGeneration
     private static void GenerateTiles(
@@ -217,13 +217,13 @@ public partial class MainWindow
         double speed = 200 * dt;
 
         if (_keysDown.Contains(Key.Z))
-            MoveEntity(player1.Id, 0, -speed);
+            MoveEntity(player1?.Id, 0, -speed);
         if (_keysDown.Contains(Key.S))
-            MoveEntity(player1.Id, 0, speed);
+            MoveEntity(player1?.Id, 0, speed);
         if (_keysDown.Contains(Key.Q))
-            MoveEntity(player1.Id, -speed, 0);
+            MoveEntity(player1?.Id, -speed, 0);
         if (_keysDown.Contains(Key.D))
-            MoveEntity(player1.Id, speed, 0);
+            MoveEntity(player1?.Id, speed, 0);
                    
         foreach (var id in CreatedEntities.ToList())
         {

@@ -17,7 +17,7 @@ CreateEntity();
 - nom de l'entitée(string) <span style="color:red">*Optionel</span>
 
 #### Retourne:
-- l'entitée créée(Guid)
+- l'entitée créée(Guid?)
 
 ---
 
@@ -42,7 +42,7 @@ ShowEntitySpeech();
 ```
 
 #### Paramètres:
-- l'entitée qui parle(Guid)
+- l'entitée qui parle(Guid?)
 - l'ID du dialogue présent dans le json portant le nom de l'entitée(string)
 
 #### Retourne:
@@ -57,7 +57,7 @@ GetEntityPosition();
 ```
 
 #### Paramètres:
-- l'entitée dont on veut les coordonnées(Guid)
+- l'entitée dont on veut les coordonnées(Guid?)
 
 #### Retourne:
 - les coordonnées de l'entitée(Point?)
@@ -80,7 +80,7 @@ MoveEntity();
 ```
 
 #### Paramètres:
-- l'entitée à bouger(Guid)
+- l'entitée à bouger(Guid?)
 - le déplacement en X(double)
 - le déplacement en Y(double)
 
@@ -98,7 +98,7 @@ SetEntityPosition();
 ```
 
 #### Paramètres:
-- l'entitée à déplacer(Guid)
+- l'entitée à déplacer(Guid?)
 - la position en X(double)
 - la position en Y(double)
 
@@ -111,7 +111,7 @@ GetEntityHp();
 ```
 
 #### Paramètres:
-- l'entitée dont on veut les pv(Guid)
+- l'entitée dont on veut les pv(Guid?)
 
 #### Retourne:
 - les pv de l'entitée(int?)
@@ -125,7 +125,7 @@ SetEntityHp();
 ```
 
 #### Paramètres:
-- l'entitée dont on veut définir les pv(Guid)
+- l'entitée dont on veut définir les pv(Guid?)
 - les pv à définir(int)
 
 ---
