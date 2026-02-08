@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace RPG;
@@ -9,6 +10,9 @@ public sealed class SpeechManager
 {
     private readonly EntityManager _entityManager;
     private readonly Dictionary<Guid, SpeechInfo> _speeches = new();
+    private Border? _speechPanel;
+    private TextBlock? _speechTextBlock;
+    private bool _displayResolved;
 
     private sealed class SpeechInfo
     {
@@ -26,7 +30,51 @@ public sealed class SpeechManager
         _speeches[entityId] = new SpeechInfo { CurrentText = null };
     }
     
+    private void EnsureDisplay()
+    {
+        if (_displayResolved) return;
+        _speechPanel = Application.Current.MainWindow?.FindName("SpeechPanel") as Border;
+        _speechTextBlock = Application.Current.MainWindow?.FindName("SpeechTextBlock") as TextBlock;
+        _displayResolved = true;
+    }
+    
     public string? ShowSpeech(Guid entityId, string idSpeech)
+    {
+        var text = GetSpeechText(entityId, idSpeech);
+
+        if (text != null)
+        {
+            EnsureDisplay();
+            if (_speechPanel != null && _speechTextBlock != null)
+            {
+                _speechTextBlock.Text = text;
+                _speechPanel.Visibility = Visibility.Visible;
+            }
+        }
+
+        return text;
+    }
+
+    public bool HideSpeech(Guid entityId)
+    {
+        if (!_speeches.TryGetValue(entityId, out var info)) return false;
+        info.CurrentText = null;
+        Console.WriteLine($"[Speech] {entityId}: hidden");
+        EnsureDisplay();
+        if (_speechPanel != null && _speechTextBlock != null)
+        {
+            _speechTextBlock.Text = string.Empty;
+            _speechPanel.Visibility = Visibility.Collapsed;
+        }
+        return true;
+    }
+    
+    public bool UpdatePosition(Guid entityId)
+    {
+        return _speeches.ContainsKey(entityId);
+    }
+
+    public string? GetSpeechText(Guid entityId, string idSpeech)
     {
         if (idSpeech == null) throw new ArgumentNullException(nameof(idSpeech));
         if (!_speeches.TryGetValue(entityId, out var info)) return null;
@@ -61,29 +109,9 @@ public sealed class SpeechManager
         if (text != null)
         {
             info.CurrentText = text;
-            Console.WriteLine($"[Speech] {entityId}: {text}");
         }
 
         return text;
-    }
-
-    public bool HideSpeech(Guid entityId)
-    {
-        if (!_speeches.TryGetValue(entityId, out var info)) return false;
-        info.CurrentText = null;
-        Console.WriteLine($"[Speech] {entityId}: hidden");
-        return true;
-    }
-
-    // Compat: nothing to update visually in console mode
-    public bool UpdatePosition(Guid entityId)
-    {
-        return _speeches.ContainsKey(entityId);
-    }
-
-    public string? GetSpeechText(Guid entityId)
-    {
-        return _speeches.TryGetValue(entityId, out var info) ? info.CurrentText : null;
     }
 
     public bool RemoveSpeech(Guid entityId)

@@ -217,12 +217,12 @@ public sealed class EntityManager
         return _speechManager?.HideSpeech(entityId.Value) ?? false;
     }
 
-    public string? GetEntitySpeechText(Guid? entityId)
+    public string? GetEntitySpeechText(Guid? entityId, string idSpeech)
     {
         if (entityId == null) return null;
         if (!_entities.TryGetValue(entityId.Value, out var info)) return null;
         if (!info.HasSpeech) return null;
-        return _speechManager?.GetSpeechText(entityId.Value);
+        return _speechManager?.GetSpeechText(entityId.Value, idSpeech);
     }
 
     private Guid? FindEntityIdByName(string name)

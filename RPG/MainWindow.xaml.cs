@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -67,7 +66,7 @@ public partial class MainWindow
 
     private bool HideEntitySpeech(Guid? entityId) => _entityManager.HideEntitySpeech(entityId);
 
-    private string? GetEntitySpeechText(Guid? entityId) => _entityManager.GetEntitySpeechText(entityId);
+    private string? GetEntitySpeechText(Guid? entityId, string idSpeech) => _entityManager.GetEntitySpeechText(entityId, idSpeech);
     
     // Génère les tuiles du terrain en appelant la méthode de TerrainGeneration
     private static void GenerateTiles(
@@ -138,10 +137,7 @@ public partial class MainWindow
         {
             // le nom player est relié au nom du fichier json pour faire corespondre les dialogues
             var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, false,  "Player1");
-
-            SetEntityHp(entityId1, 90);
-
-            var pos1 = GetEntityPosition(entityId1);
+            CreateEntity(new Uri(entityTexture2, UriKind.Absolute), 64, 64, 400, 120, 100, true, "Npc1");
         }
     }
     
@@ -213,6 +209,7 @@ public partial class MainWindow
     private void OnGameTick(double dt)
     {
         var player1 = FindEntityByName("Player1");
+        var npc1 = FindEntityByName("Npc1");
 
         double speed = 200 * dt;
 
@@ -235,3 +232,4 @@ public partial class MainWindow
         }
     }
 }
+
