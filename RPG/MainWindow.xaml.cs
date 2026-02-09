@@ -8,16 +8,6 @@ namespace RPG;
 
 public partial class MainWindow
 {
-    
-    /// <summary>
-    /// Crée un joueur (Image) dans le calque EntitiesLayer et le place par-dessus des tuiles.
-    /// - entityTexture : Uri vers l'image du joueur (file:// ou pack://)
-    /// - width/height : dimensions du sprite joueur
-    /// - x/y : position initiale en pixels depuis le coin supérieur gauche du GameCanvas
-    ///
-    /// La méthode instancie un Image, lui applique un TranslateTransform pour faciliter les déplacements en runtime.
-    /// Retourne l'identifiant (Guid) du joueur créé. Utilisez cet id pour appeler MoveEntity(id,...) ou SetEntityHp(id,...).
-    /// </summary>
     private Guid CreateEntity(
         Uri entityTexture, 
         int width, 
@@ -36,39 +26,17 @@ public partial class MainWindow
             entityHp, 
             hasSpeech, 
             name);
-
-    // Renvoie la position de l'entitée sous la forme d'un Point (X,Y) ou null si l'id n'existe pas
-    //EX:
-    //var pos = GetEntityPosition(entityId);
-    //pos.X , pos.Y
     private Point? GetEntityPosition(Guid? entityId) => _entityManager.GetEntityPosition(entityId);
-    
-    // Positionne l'entitée à la position absolue (x,y) en pixels
     private void SetEntityPosition(Guid? entityId, double x, double y) => _entityManager.SetEntityPosition(entityId, x, y);
-    
-    // Supprime l'entitée
     private void RemoveEntity(Guid? entityId) => _entityManager.RemoveEntity(entityId);
-    
-    // Renvoie les points de vie int (HP) de l'entitée ou null si l'id n'existe pas
     private int? GetEntityrHp(Guid? entityId) => _entityManager.GetEntityrHp(entityId);
-    
-    
-    // Déplace l'entitée de (dx,dy) pixels; ne fait rien si l'id n'existe pas
     private void MoveEntity(Guid? entityId, double dx, double dy) => _entityManager.MoveEntity(entityId, dx, dy);
-    
-    // Définit les points de vie (HP) de l'entitée; ne fait rien si l'id n'existe pas
+    private bool IsEntityWithinRadius(Guid? sourceEntityId, Guid? targetEntityId, double radius) => _entityManager.IsEntityWithinRadius(sourceEntityId, targetEntityId, radius);
     private void SetEntityHp(Guid? entityId, int hp) => _entityManager.SetEntityHp(entityId, hp);
-    
-    // Recherche l'entitée par son nom; retourne null si non trouvée
     private EntityManager.EntityHandle? FindEntityByName(string name) => _entityManager.FindEntityByName(name);
-    
     private string? ShowEntitySpeech(Guid? entityId, string idSpeech, TimeSpan? displayDuration = null) => _entityManager.ShowEntitySpeech(entityId, idSpeech, displayDuration);
-
     private bool HideEntitySpeech(Guid? entityId) => _entityManager.HideEntitySpeech(entityId);
-
     private string? GetEntitySpeechText(Guid? entityId, string idSpeech) => _entityManager.GetEntitySpeechText(entityId, idSpeech);
-    
-    // Génère les tuiles du terrain en appelant la méthode de TerrainGeneration
     private static void GenerateTiles(
         int widthTiles, 
         int heightTiles, 
@@ -86,7 +54,6 @@ public partial class MainWindow
         tilesLayer, 
         gameCanvas
         );
- 
     public void RegisterTick(Action<double> handler) => _gameLoop.Register(handler);
     public void UnregisterTick(Action<double> handler) => _gameLoop.Unregister(handler);
     public void StopGameLoop() => _gameLoop.Stop();
@@ -135,7 +102,6 @@ public partial class MainWindow
 
         if (File.Exists(entityTexture))
         {
-            // le nom player est relié au nom du fichier json pour faire corespondre les dialogues
             var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, false,  "Player1");
             CreateEntity(new Uri(entityTexture2, UriKind.Absolute), 64, 64, 400, 120, 100, true, "Npc1");
         }
@@ -221,6 +187,11 @@ public partial class MainWindow
             MoveEntity(player1?.Id, -speed, 0);
         if (_keysDown.Contains(Key.D))
             MoveEntity(player1?.Id, speed, 0);
+        
+        if (IsEntityWithinRadius(player1?.Id, npc1?.Id, 80))
+        {
+            ShowEntitySpeech(npc1?.Id, "text1", TimeSpan.FromSeconds(2));
+        }
                    
         foreach (var id in CreatedEntities.ToList())
         {

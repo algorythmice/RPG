@@ -130,6 +130,17 @@ SetEntityHp();
 - les pv à définir(int)
 
 ---
+## L'entité se trouve-t-elle dans le rayon ?
+```
+IsEntityWithinRadius();
+```
+#### Paramètres:
+- l'entitée à vérifier(Guid?)
+- l'entitée de référence(Guid?)
+- le rayon(double)
+#### Retourne:
+- true si l'entitée à vérifier se trouve dans le rayon de l'entitée(bool)
+---
 
 ## Créer une tâche qui s'execute a un interval régulier
 

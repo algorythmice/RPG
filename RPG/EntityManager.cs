@@ -1,4 +1,4 @@
-﻿﻿using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -190,6 +190,27 @@ public sealed class EntityManager
             {
                 _speechManager?.UpdatePosition(entityId.Value);
             }
+    }
+
+    public bool IsEntityWithinRadius(Guid? sourceEntityId, Guid? targetEntityId, double radius)
+    {
+        if (sourceEntityId == null || targetEntityId == null) return false;
+        if (radius < 0) return false;
+        if (!_entities.TryGetValue(sourceEntityId.Value, out var sourceInfo)) return false;
+        if (!_entities.TryGetValue(targetEntityId.Value, out var targetInfo)) return false;
+
+        var sourcePos = new Point(
+            Canvas.GetLeft(sourceInfo.Root) + sourceInfo.Transform.X,
+            Canvas.GetTop(sourceInfo.Root) + sourceInfo.Transform.Y);
+        var targetPos = new Point(
+            Canvas.GetLeft(targetInfo.Root) + targetInfo.Transform.X,
+            Canvas.GetTop(targetInfo.Root) + targetInfo.Transform.Y);
+
+        var dx = targetPos.X - sourcePos.X;
+        var dy = targetPos.Y - sourcePos.Y;
+        var distanceSquared = (dx * dx) + (dy * dy);
+        var radiusSquared = radius * radius;
+        return distanceSquared <= radiusSquared;
     }
 
     public void SetEntityHp(Guid? entityId, int hp)
