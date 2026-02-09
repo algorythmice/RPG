@@ -201,12 +201,12 @@ public sealed class EntityManager
         info.Image.Opacity = info.Hp > 0 ? 1.0 : 0.5;
     }
  
-    public string? ShowEntitySpeech(Guid? entityId, string idSpeech)
+    public string? ShowEntitySpeech(Guid? entityId, string idSpeech, TimeSpan? displayDuration)
     {
         if (entityId == null) return null;
         if (!_entities.TryGetValue(entityId.Value, out var info)) return null;
         if (!info.HasSpeech) return null;
-        return _speechManager?.ShowSpeech(entityId.Value, idSpeech) ?? null;
+        return _speechManager?.ShowSpeech(entityId.Value, idSpeech, displayDuration) ?? null;
     }
 
     public bool HideEntitySpeech(Guid? entityId)

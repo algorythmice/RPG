@@ -35,7 +35,7 @@ FindEntityByName();
 
 ---
 
-## Afficher un dialogue (pour l'instant en console)
+## Afficher un dialogue en jeu
 
 ```
 ShowEntitySpeech();
@@ -44,6 +44,7 @@ ShowEntitySpeech();
 #### Paramètres:
 - l'entitée qui parle(Guid?)
 - l'ID du dialogue présent dans le json portant le nom de l'entitée(string)
+- le temps d'affichage du dialogue en secondes(TimeSpan) <span style="color:red">*Optionel</span>
 
 #### Retourne:
 - le dialogue affiché(string)

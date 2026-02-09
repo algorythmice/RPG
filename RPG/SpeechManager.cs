@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace RPG;
 
@@ -10,6 +11,7 @@ public sealed class SpeechManager
 {
     private readonly EntityManager _entityManager;
     private readonly Dictionary<Guid, SpeechInfo> _speeches = new();
+    private readonly Dictionary<Guid, DispatcherTimer> _hideTimers = new();
     private Border? _speechPanel;
     private TextBlock? _speechTextBlock;
     private bool _displayResolved;
@@ -38,7 +40,7 @@ public sealed class SpeechManager
         _displayResolved = true;
     }
     
-    public string? ShowSpeech(Guid entityId, string idSpeech)
+    public string? ShowSpeech(Guid entityId, string idSpeech, TimeSpan? displayDuration = null)
     {
         var text = GetSpeechText(entityId, idSpeech);
 
@@ -49,15 +51,44 @@ public sealed class SpeechManager
             {
                 _speechTextBlock.Text = text;
                 _speechPanel.Visibility = Visibility.Visible;
+                ScheduleHide(entityId, displayDuration);
             }
         }
 
         return text;
     }
 
+    private void ScheduleHide(Guid entityId, TimeSpan? displayDuration)
+    {
+        if (displayDuration == null) return;
+        if (_hideTimers.TryGetValue(entityId, out var existingTimer))
+        {
+            existingTimer.Stop();
+            _hideTimers.Remove(entityId);
+        }
+
+        var timer = new DispatcherTimer
+        {
+            Interval = displayDuration.Value
+        };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            _hideTimers.Remove(entityId);
+            HideSpeech(entityId);
+        };
+        _hideTimers[entityId] = timer;
+        timer.Start();
+    }
+
     public bool HideSpeech(Guid entityId)
     {
         if (!_speeches.TryGetValue(entityId, out var info)) return false;
+        if (_hideTimers.TryGetValue(entityId, out var timer))
+        {
+            timer.Stop();
+            _hideTimers.Remove(entityId);
+        }
         info.CurrentText = null;
         Console.WriteLine($"[Speech] {entityId}: hidden");
         EnsureDisplay();
@@ -116,6 +147,11 @@ public sealed class SpeechManager
 
     public bool RemoveSpeech(Guid entityId)
     {
+        if (_hideTimers.TryGetValue(entityId, out var timer))
+        {
+            timer.Stop();
+            _hideTimers.Remove(entityId);
+        }
         return _speeches.Remove(entityId);
     }
 }

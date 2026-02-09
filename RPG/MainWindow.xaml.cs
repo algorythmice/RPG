@@ -62,7 +62,7 @@ public partial class MainWindow
     // Recherche l'entitée par son nom; retourne null si non trouvée
     private EntityManager.EntityHandle? FindEntityByName(string name) => _entityManager.FindEntityByName(name);
     
-    private string? ShowEntitySpeech(Guid? entityId, string idSpeech) => _entityManager.ShowEntitySpeech(entityId, idSpeech);
+    private string? ShowEntitySpeech(Guid? entityId, string idSpeech, TimeSpan? displayDuration = null) => _entityManager.ShowEntitySpeech(entityId, idSpeech, displayDuration);
 
     private bool HideEntitySpeech(Guid? entityId) => _entityManager.HideEntitySpeech(entityId);
 
