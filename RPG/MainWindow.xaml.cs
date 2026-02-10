@@ -95,7 +95,7 @@ public partial class MainWindow
         var exeDir = AppDomain.CurrentDomain.BaseDirectory;
         var assetsDir = Path.Combine(exeDir, "Images");
 
-        var grassTexture = Path.Combine(assetsDir, "tile_grass.png");
+        var grassTexture = Path.Combine(assetsDir, "grass_block.png");
         var entityTexture = Path.Combine(assetsDir, "player.png");
         var entityTexture2 = Path.Combine(assetsDir, "player2.png");
         
