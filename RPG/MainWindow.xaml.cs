@@ -67,6 +67,8 @@ public partial class MainWindow
     private readonly List<string> _scheduledTaskNames = new();
     
     private readonly HashSet<Key> _keysDown = new();
+    private readonly HashSet<Key> _keysUp = new();
+    private readonly HashSet<Key> _keysPressed = new();
     private bool _isFullscreen;
     private WindowStyle _savedWindowStyle;
     private ResizeMode _savedResizeMode;
@@ -81,7 +83,6 @@ public partial class MainWindow
         MainMenu.OptionsRequested += OnOptionsRequested;
         MainMenu.QuitRequested += OnQuitRequested;
         
-        // Démarre en fenêtre classique standard; bascule en plein écran via F11
         KeyDown += OnKeyDown;
         KeyUp += OnKeyUp;
         Focusable = true;
@@ -109,18 +110,23 @@ public partial class MainWindow
     
     private void OnKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.F11)
+        var isNewPress = _keysDown.Add(e.Key);
+        if (isNewPress)
+        {
+            _keysPressed.Add(e.Key);
+        }
+        _keysUp.Remove(e.Key);
+        if (e.Key == Key.F11 && isNewPress)
         {
             ToggleFullscreen();
             e.Handled = true;
-            return;
         }
-        _keysDown.Add(e.Key);
     }
 
     private void OnKeyUp(object sender, KeyEventArgs e)
     {
         _keysDown.Remove(e.Key);
+        _keysUp.Add(e.Key);
     }
 
     private void ToggleFullscreen()
@@ -187,6 +193,11 @@ public partial class MainWindow
             MoveEntity(player1?.Id, -speed, 0);
         if (_keysDown.Contains(Key.D))
             MoveEntity(player1?.Id, speed, 0);
+        if (_keysPressed.Contains(Key.Escape))
+            if (MainMenu.Visibility == Visibility.Visible)
+                MainMenu.Visibility = Visibility.Collapsed;
+            else
+                MainMenu.Visibility = Visibility.Visible;
         
         if (IsEntityWithinRadius(player1?.Id, npc1?.Id, 80))
         {
@@ -201,6 +212,8 @@ public partial class MainWindow
                 RemoveEntity(id);
             }
         }
+        _keysUp.Clear();
+        _keysPressed.Clear();
     }
 }
 
