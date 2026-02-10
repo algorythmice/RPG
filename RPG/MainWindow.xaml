@@ -9,24 +9,23 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
-            <RowDefinition Height="140" />
         </Grid.RowDefinitions>
 
+        <!-- Viewport: GameCanvas garde la taille de la zone visible. -->
         <Canvas x:Name="GameCanvas" Background="Black" ClipToBounds="True" Grid.Row="0">
             <!-- Layer pour le sol -->
             <Canvas x:Name="GroundLayer" Panel.ZIndex="0" />
-            
-            <!--<Canvas x:Name="TilesLayer" Panel.ZIndex="0" /> -->
 
             <!-- Layer pour les entités (joueur, ennemis) : placé au-dessus des tuiles -->
             <Canvas x:Name="EntitiesLayer" Panel.ZIndex="1" />
         </Canvas>
 
-        <Border x:Name="SpeechPanel" Grid.Row="1" Background="#CC000000" Padding="12" Visibility="Collapsed" Panel.ZIndex="2">
+        <!-- Panneau de dialogue superposé en bas sans réserver d'espace quand caché -->
+        <Border x:Name="SpeechPanel" Grid.Row="0" VerticalAlignment="Bottom" Background="#CC000000" Padding="12" Visibility="Collapsed" Panel.ZIndex="2">
             <TextBlock x:Name="SpeechTextBlock" Foreground="White" FontSize="16" TextWrapping="Wrap" />
         </Border>
 
         <!-- Menu principal superposé par-dessus le jeu -->
-        <local:Menu x:Name="MainMenu" Panel.ZIndex="10" Grid.Row="0" Grid.RowSpan="2" />
+        <local:Menu x:Name="MainMenu" Panel.ZIndex="10" Grid.Row="0" />
     </Grid>
 </Window>

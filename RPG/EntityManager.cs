@@ -266,4 +266,11 @@ public sealed class EntityManager
         if (!_entities.TryGetValue(id.Value, out var info)) return null;
         return new EntityHandle { Id = id.Value, Hp = info.Hp , Name = info.Name };
     }
+
+    public Size? GetEntitySize(Guid? entityId)
+    {
+        if (entityId == null) return null;
+        if (!_entities.TryGetValue(entityId.Value, out var info)) return null;
+        return new Size(info.Root.Width, info.Root.Height);
+    }
 }

@@ -1,4 +1,4 @@
-﻿namespace RPG;
+﻿﻿namespace RPG;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -51,9 +51,8 @@ public class TerrainGeneration
                 tilesLayer.Children.Add(img);
             }
         }
-
-        // Ajuster la taille du GameCanvas si nécessaire pour contenir toutes les tuiles
-        gameCanvas.Width = widthTiles * tileSize;
-        gameCanvas.Height = heightTiles * tileSize;
+        
+        tilesLayer.Width = widthTiles * tileSize;
+        tilesLayer.Height = heightTiles * tileSize;
     }
 }

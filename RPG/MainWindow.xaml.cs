@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 
 namespace RPG;
@@ -74,10 +75,20 @@ public partial class MainWindow
     private ResizeMode _savedResizeMode;
     private WindowState _savedWindowState;
 
+    private EntityManager.EntityHandle? FindEntityById(Guid? id) => _entityManager.FindEntityById(id);
+    private readonly TranslateTransform _worldTransform = new();
+    private double _mapWidthPixels;
+    private double _mapHeightPixels;
+    private Guid? _playerId;
+
     public MainWindow()
     {
         InitializeComponent();
         WindowState = WindowState.Maximized;
+
+        GroundLayer.RenderTransform = _worldTransform;
+        EntitiesLayer.RenderTransform = _worldTransform;
+        GameCanvas.SizeChanged += OnViewportSizeChanged;
 
         MainMenu.StartGameRequested += OnStartGameRequested;
         MainMenu.OptionsRequested += OnOptionsRequested;
@@ -99,13 +110,26 @@ public partial class MainWindow
         var entityTexture = Path.Combine(assetsDir, "player.png");
         var entityTexture2 = Path.Combine(assetsDir, "player2.png");
         
-        GenerateTiles(30, 17, 64, new Uri(grassTexture, UriKind.Absolute), GroundLayer, GameCanvas);
+        const int mapWidthTiles = 50;
+        const int mapHeightTiles = 30;
+        const int tileSize = 64;
+        _mapWidthPixels = mapWidthTiles * tileSize;
+        _mapHeightPixels = mapHeightTiles * tileSize;
+
+        GenerateTiles(mapWidthTiles, mapHeightTiles, tileSize, new Uri(grassTexture, UriKind.Absolute), GroundLayer, GameCanvas);
+        GroundLayer.Width = _mapWidthPixels;
+        GroundLayer.Height = _mapHeightPixels;
+        EntitiesLayer.Width = _mapWidthPixels;
+        EntitiesLayer.Height = _mapHeightPixels;
 
         if (File.Exists(entityTexture))
         {
             var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, false,  "Player1");
+            _playerId = entityId1;
             CreateEntity(new Uri(entityTexture2, UriKind.Absolute), 64, 64, 400, 120, 100, true, "Npc1");
         }
+
+        Loaded += (_, _) => UpdateCameraForEntity(_playerId);
     }
     
     private void OnKeyDown(object sender, KeyEventArgs e)
@@ -177,33 +201,109 @@ public partial class MainWindow
         _scheduledTaskNames.Clear();
         _gameLoop.Stop();
     }
+    
+    private void OnViewportSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        try
+        {
+            var minHeight = Math.Max(0, GameCanvas.ActualHeight * 0.15);
+            if (SpeechPanel != null)
+            {
+                SpeechPanel.MinHeight = minHeight;
+            }
+        }
+        catch (Exception ex)
+        {             
+            Console.Error.WriteLine(ex.Message);
+        }
+
+        UpdateCameraForEntity(_playerId);
+    }
+
+    private void UpdateCameraForEntity(Guid? entityId)
+    {
+        if (_mapWidthPixels <= 0 || _mapHeightPixels <= 0) return;
+        if (entityId == null) return;
+        var position = GetEntityPosition(entityId);
+        var size = _entityManager.GetEntitySize(entityId);
+        if (position == null || size == null) return;
+        UpdateCamera(position.Value, size.Value);
+    }
+
+    private void UpdateCamera(Point targetPosition, Size targetSize)
+    {
+        var viewportWidth = GameCanvas.ActualWidth;
+        var viewportHeight = GameCanvas.ActualHeight;
+        if (viewportWidth <= 0 || viewportHeight <= 0) return;
+
+        double desiredX = (targetPosition.X + (targetSize.Width / 2)) - (viewportWidth / 2);
+        double desiredY = (targetPosition.Y + (targetSize.Height / 2)) - (viewportHeight / 2);
+
+        double maxX = Math.Max(0, _mapWidthPixels - viewportWidth);
+        double maxY = Math.Max(0, _mapHeightPixels - viewportHeight);
+
+        double clampedX = Math.Clamp(desiredX, 0, maxX);
+        double clampedY = Math.Clamp(desiredY, 0, maxY);
+
+        _worldTransform.X = -clampedX;
+        _worldTransform.Y = -clampedY;
+    }
+
+    private void ClampEntityToMap(Guid? entityId)
+    {
+        if (_mapWidthPixels <= 0 || _mapHeightPixels <= 0) return;
+        var position = GetEntityPosition(entityId);
+        var size = _entityManager.GetEntitySize(entityId);
+        if (position == null || size == null) return;
+
+        double clampedX = Math.Clamp(position.Value.X, 0, Math.Max(0, _mapWidthPixels - size.Value.Width));
+        double clampedY = Math.Clamp(position.Value.Y, 0, Math.Max(0, _mapHeightPixels - size.Value.Height));
+
+        double dx = clampedX - position.Value.X;
+        double dy = clampedY - position.Value.Y;
+        if (Math.Abs(dx) > double.Epsilon || Math.Abs(dy) > double.Epsilon)
+        {
+            MoveEntity(entityId, dx, dy);
+        }
+    }
 
     private void OnGameTick(double dt)
     {
-        var player1 = FindEntityByName("Player1");
+        var player1 = _playerId != null ? FindEntityById(_playerId) : FindEntityByName("Player1");
         var npc1 = FindEntityByName("Npc1");
 
         double speed = 200 * dt;
+        double dx = 0;
+        double dy = 0;
 
-        if (_keysDown.Contains(Key.Z))
-            MoveEntity(player1?.Id, 0, -speed);
-        if (_keysDown.Contains(Key.S))
-            MoveEntity(player1?.Id, 0, speed);
-        if (_keysDown.Contains(Key.Q))
-            MoveEntity(player1?.Id, -speed, 0);
-        if (_keysDown.Contains(Key.D))
-            MoveEntity(player1?.Id, speed, 0);
+        if (_keysDown.Contains(Key.Z)) dy -= speed;
+        if (_keysDown.Contains(Key.S)) dy += speed;
+        if (_keysDown.Contains(Key.Q)) dx -= speed;
+        if (_keysDown.Contains(Key.D)) dx += speed;
+
+        if (Math.Abs(dx) > double.Epsilon || Math.Abs(dy) > double.Epsilon)
+        {
+            MoveEntity(player1?.Id, dx, dy);
+        }
+
         if (_keysPressed.Contains(Key.Escape))
+        {
             if (MainMenu.Visibility == Visibility.Visible)
                 MainMenu.Visibility = Visibility.Collapsed;
             else
                 MainMenu.Visibility = Visibility.Visible;
+        }
         
+        foreach (var id in CreatedEntities.ToList())
+        {
+            ClampEntityToMap(id);
+        }
+
         if (IsEntityWithinRadius(player1?.Id, npc1?.Id, 80))
         {
             ShowEntitySpeech(npc1?.Id, "text1", TimeSpan.FromSeconds(2));
         }
-                   
+
         foreach (var id in CreatedEntities.ToList())
         {
             var hp = GetEntityrHp(id);
@@ -212,8 +312,9 @@ public partial class MainWindow
                 RemoveEntity(id);
             }
         }
+
+        UpdateCameraForEntity(player1?.Id);
         _keysUp.Clear();
         _keysPressed.Clear();
     }
 }
-
