@@ -27,17 +27,33 @@ public partial class MainWindow
             entityHp, 
             hasSpeech, 
             name);
-    private Point? GetEntityPosition(Guid? entityId) => _entityManager.GetEntityPosition(entityId);
-    private void SetEntityPosition(Guid? entityId, double x, double y) => _entityManager.SetEntityPosition(entityId, x, y);
-    private void RemoveEntity(Guid? entityId) => _entityManager.RemoveEntity(entityId);
-    private int? GetEntityrHp(Guid? entityId) => _entityManager.GetEntityrHp(entityId);
-    private void MoveEntity(Guid? entityId, double dx, double dy) => _entityManager.MoveEntity(entityId, dx, dy);
-    private bool IsEntityWithinRadius(Guid? sourceEntityId, Guid? targetEntityId, double radius) => _entityManager.IsEntityWithinRadius(sourceEntityId, targetEntityId, radius);
-    private void SetEntityHp(Guid? entityId, int hp) => _entityManager.SetEntityHp(entityId, hp);
-    private EntityManager.EntityHandle? FindEntityByName(string name) => _entityManager.FindEntityByName(name);
-    private string? ShowEntitySpeech(Guid? entityId, string idSpeech, TimeSpan? displayDuration = null) => _entityManager.ShowEntitySpeech(entityId, idSpeech, displayDuration);
-    private bool HideEntitySpeech(Guid? entityId) => _entityManager.HideEntitySpeech(entityId);
-    private string? GetEntitySpeechText(Guid? entityId, string idSpeech) => _entityManager.GetEntitySpeechText(entityId, idSpeech);
+    private Point? GetEntityPosition(Guid? entityId) =>
+        _entityManager.GetEntityPosition(entityId);
+    private void SetEntityPosition(Guid? entityId, double x, double y) =>
+        _entityManager.SetEntityPosition(entityId, x, y);
+    private void RemoveEntity(Guid? entityId) => 
+        _entityManager.RemoveEntity(entityId);
+    private int? GetEntityrHp(Guid? entityId) => 
+        _entityManager.GetEntityrHp(entityId);
+    private void MoveEntity(Guid? entityId, double dx, double dy) => 
+        _entityManager.MoveEntity(entityId, dx, dy);
+    private bool IsEntityWithinRadius(Guid? sourceEntityId, Guid? targetEntityId, double radius) => 
+        _entityManager.IsEntityWithinRadius(sourceEntityId, targetEntityId, radius);
+    private void SetEntityHp(Guid? entityId, int hp) => 
+        _entityManager.SetEntityHp(entityId, hp);
+    private EntityManager.EntityHandle? FindEntityByName(string name) => 
+        _entityManager.FindEntityByName(name);
+    private string? ShowEntitySpeech(Guid? entityId, string idSpeech, TimeSpan? displayDuration = null) =>
+        _entityManager.ShowEntitySpeech(entityId, idSpeech, displayDuration);
+    private bool HideEntitySpeech(Guid? entityId) => 
+        _entityManager.HideEntitySpeech(entityId);
+    private string? GetEntitySpeechText(Guid? entityId, string idSpeech) => 
+        _entityManager.GetEntitySpeechText(entityId, idSpeech);
+    private void ClampEntityToMap(Guid? entityId) => 
+        _entityManager.ClampEntityToMap(entityId, _mapWidthPixels, _mapHeightPixels);
+
+    private void UpdateCameraForEntity(Guid? entityId) =>
+        _entityManager.UpdateCameraForEntity(entityId, _mapWidthPixels, _mapHeightPixels);
     private static void GenerateTiles(
         int widthTiles, 
         int heightTiles, 
@@ -99,7 +115,7 @@ public partial class MainWindow
         Focusable = true;
         Focus();
 
-        _entityManager = new EntityManager(EntitiesLayer);
+        _entityManager = new EntityManager(EntitiesLayer, this);
         _gameLoop.Register(OnGameTick);
         _gameLoop.Start();
         
@@ -124,7 +140,7 @@ public partial class MainWindow
 
         if (File.Exists(entityTexture))
         {
-            var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 64, 64, 200, 120, 80, false,  "Player1");
+            var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 63, 60, 200, 120, 80, false,  "Player1");
             _playerId = entityId1;
             CreateEntity(new Uri(entityTexture2, UriKind.Absolute), 64, 64, 400, 120, 100, true, "Npc1");
         }
@@ -219,25 +235,21 @@ public partial class MainWindow
 
         UpdateCameraForEntity(_playerId);
     }
-
-    private void UpdateCameraForEntity(Guid? entityId)
-    {
-        if (_mapWidthPixels <= 0 || _mapHeightPixels <= 0) return;
-        if (entityId == null) return;
-        var position = GetEntityPosition(entityId);
-        var size = _entityManager.GetEntitySize(entityId);
-        if (position == null || size == null) return;
-        UpdateCamera(position.Value, size.Value);
-    }
-
-    private void UpdateCamera(Point targetPosition, Size targetSize)
+    
+    public void UpdateCamera(Point targetPosition, Size? targetSize)
     {
         var viewportWidth = GameCanvas.ActualWidth;
         var viewportHeight = GameCanvas.ActualHeight;
         if (viewportWidth <= 0 || viewportHeight <= 0) return;
-
-        double desiredX = (targetPosition.X + (targetSize.Width / 2)) - (viewportWidth / 2);
-        double desiredY = (targetPosition.Y + (targetSize.Height / 2)) - (viewportHeight / 2);
+        
+        double desiredX = (targetPosition.X) - (viewportWidth / 2);
+        double desiredY = (targetPosition.Y) - (viewportHeight / 2);
+        
+        if (targetSize.HasValue)
+        {
+            desiredX = (targetPosition.X + targetSize.Value.Width / 2) - (viewportWidth / 2);
+            desiredY = (targetPosition.Y + targetSize.Value.Height / 2) - (viewportHeight / 2);
+        }
 
         double maxX = Math.Max(0, _mapWidthPixels - viewportWidth);
         double maxY = Math.Max(0, _mapHeightPixels - viewportHeight);
@@ -247,24 +259,6 @@ public partial class MainWindow
 
         _worldTransform.X = -clampedX;
         _worldTransform.Y = -clampedY;
-    }
-
-    private void ClampEntityToMap(Guid? entityId)
-    {
-        if (_mapWidthPixels <= 0 || _mapHeightPixels <= 0) return;
-        var position = GetEntityPosition(entityId);
-        var size = _entityManager.GetEntitySize(entityId);
-        if (position == null || size == null) return;
-
-        double clampedX = Math.Clamp(position.Value.X, 0, Math.Max(0, _mapWidthPixels - size.Value.Width));
-        double clampedY = Math.Clamp(position.Value.Y, 0, Math.Max(0, _mapHeightPixels - size.Value.Height));
-
-        double dx = clampedX - position.Value.X;
-        double dy = clampedY - position.Value.Y;
-        if (Math.Abs(dx) > double.Epsilon || Math.Abs(dy) > double.Epsilon)
-        {
-            MoveEntity(entityId, dx, dy);
-        }
     }
 
     private void OnGameTick(double dt)

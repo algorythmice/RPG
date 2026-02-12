@@ -141,6 +141,28 @@ IsEntityWithinRadius();
 #### Retourne:
 - true si l'entitée à vérifier se trouve dans le rayon de l'entitée(bool)
 ---
+## Replacer l'entitée dans la zone de jeu
+```
+ClampEntityToMap();
+```
+#### Paramètres:
+- l'entitée à replacer(Guid?)
+---
+## Update la position de la caméra pour suivre une entitée
+```
+UpdateCameraForEntity();
+```
+#### Paramètres:
+- l'entitée à suivre(Guid?)
+---
+## Update la position de la caméra sur un point
+```
+UpdateCamera();
+```
+#### Paramètres:
+- le point de la caméra(Point)
+- la taille de l'objet a suivre si c'est un objet/entitée <span style="color:red">*Optionel</span>
+---
 
 ## Créer une tâche qui s'execute a un interval régulier
 

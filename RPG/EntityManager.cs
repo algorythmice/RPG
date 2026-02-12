@@ -9,14 +9,16 @@ public sealed class EntityManager
 {
     private readonly Panel _entitiesLayer;
     private readonly SpeechManager? _speechManager;
+    private readonly MainWindow _mainWindow;
     private readonly Dictionary<Guid, EntityInfo> _entities = new();
     private readonly Dictionary<string, Guid> _entityByName = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<Guid> _createdEntities = new();
     private Guid? _lastCreatedEntityId;
 
-    public EntityManager(Panel entitiesLayer, SpeechManager? speechManager = null)
+    public EntityManager(Panel entitiesLayer, MainWindow mainWindow, SpeechManager? speechManager = null)
     {
         _entitiesLayer = entitiesLayer ?? throw new ArgumentNullException(nameof(entitiesLayer));
+        _mainWindow = mainWindow ?? throw new ArgumentNullException(nameof(mainWindow));
         _speechManager = speechManager ?? new SpeechManager(this);
     }
 
@@ -85,7 +87,7 @@ public sealed class EntityManager
             Text = entityHp.ToString(),
             Foreground = Brushes.White,
             Background = new SolidColorBrush(Color.FromArgb(160, 0, 0, 0)),
-            Padding = new Thickness(4, 2, 4, 2),
+            Padding = new Thickness(4, 2, 4, 0),
             FontWeight = FontWeights.Bold,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Top,
@@ -272,5 +274,32 @@ public sealed class EntityManager
         if (entityId == null) return null;
         if (!_entities.TryGetValue(entityId.Value, out var info)) return null;
         return new Size(info.Root.Width, info.Root.Height);
+    }
+    public void ClampEntityToMap(Guid? entityId, double mapWidthPixels, double mapHeightPixels)
+    {
+        if (entityId == null) return;
+        if (mapWidthPixels <= 0 || mapHeightPixels <= 0) return;
+        var position = GetEntityPosition(entityId);
+        var size = GetEntitySize(entityId);
+        if (position == null || size == null) return;
+
+        double clampedX = Math.Clamp(position.Value.X, 0, Math.Max(0, mapWidthPixels - size.Value.Width));
+        double clampedY = Math.Clamp(position.Value.Y, 0, Math.Max(0, mapHeightPixels - size.Value.Height));
+
+        double dx = clampedX - position.Value.X;
+        double dy = clampedY - position.Value.Y;
+        if (Math.Abs(dx) > double.Epsilon || Math.Abs(dy) > double.Epsilon)
+        {
+            MoveEntity(entityId, dx, dy);
+        }
+    }
+    public void UpdateCameraForEntity(Guid? entityId, double mapWidthPixels, double mapHeightPixels)
+    {
+        if (mapWidthPixels <= 0 || mapHeightPixels <= 0) return;
+        if (entityId == null) return;
+        var position = GetEntityPosition(entityId);
+        var size = GetEntitySize(entityId);
+        if (position == null || size == null) return; 
+        _mainWindow.UpdateCamera(position.Value, size.Value);
     }
 }

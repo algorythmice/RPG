@@ -1,4 +1,4 @@
-﻿# 🧠 AI MEMORY
+﻿﻿# 🧠 AI MEMORY
 
 This file contains everything the AI must remember permanently.
 
@@ -59,11 +59,11 @@ This file contains everything the AI must remember permanently.
 - Erreur 1 : initialement je redimensionnais `GameCanvas` à la taille de la carte (GameCanvas.Width/Height) — conséquence : pas de scrolling car la fenêtre prenait la taille totale de la carte. Correction : remettre `GameCanvas` comme viewport et dimensionner `tilesLayer` seulement.
 - Erreur 2 : zone blanche en bas lorsque `SpeechPanel` était masqué — cause : utilisation d'une `Grid` à 2 lignes et la deuxième ligne réservait de l'espace. Correction : transformer en une seule ligne et superposer `SpeechPanel` (overlay) en bas; lorsqu'il est `Collapsed` il n'occupe plus d'espace.
 - Erreur 3 : mouvements diagonaux et entrée multi-touch clavier mal gérés — initialement le code appliquait potentiellement des mouvements séparés ou mettait à jour caméra à tort. Correction : accumuler `dx` et `dy` puis appeler `MoveEntity` une seule fois ; clamp ensuite et update camera.
-- Erreur 4 (potentielle) : la caméra peut centrer le joueur exactement au centre, mais si un panneau UI masque le bas (ex. `SpeechPanel` visible), le joueur peut se retrouver caché. Statut : identifié comme amélioration, non implémentée automatiquement (note dans `AI_MEMORY`).
+- Erreur 4 : `NullReferenceException` dans `EntityManager.UpdateCameraForEntity` car `_mainWindow` n'était pas initialisé. Correction : `EntityManager(Panel entitiesLayer, MainWindow mainWindow, SpeechManager? speechManager = null)` et `new EntityManager(EntitiesLayer, this)` dans le constructeur `MainWindow`.
+- Erreur 5 : plusieurs warnings de code mort ont été identifiés et réduits par suppression de variables inutilisées et adaptation des wrappers.
 
 ## Known Bugs / Limitations actuelles
-- Le calcul de la caméra ne prend pas encore en compte la hauteur effective du `SpeechPanel` visible pour éviter que le joueur soit recouvert — amélioration recommandée : soustraire `SpeechPanel.ActualHeight` du `viewportHeight` lors du calcul de la position souhaitée pour la caméra si `SpeechPanel.Visibility == Visible`.
-- Pas de lissage/animation de caméra (snap actuel) — amélioration possible : interpolation (lerp) ou easing pour mouvement de caméra plus doux.
+- Erreur 4 (potentielle) : la caméra peut centrer le joueur exactement au centre, mais si un panneau UI masque le bas (ex. `SpeechPanel` visible), le joueur peut se retrouver caché. Statut : identifié comme amélioration, non implémentée automatiquement (note dans `AI_MEMORY`).
 - Aucun système de collision complexe (tuiles infranchissables) n'est présent — si besoin, implémenter une grille de collision et interdire certains déplacements.
 
 ## Forbidden solutions
@@ -79,6 +79,7 @@ This file contains everything the AI must remember permanently.
 - 2026-02-10 : Ajout du système de carte étendue, caméra via `TranslateTransform` et clamping des entités.
 - 2026-02-10 : Fix zone blanche (Grid -> overlay) et support des diagonales en déplaçant par vecteur unique.
 - 2026-02-10 : Ajout de la règle `SpeechPanel.MinHeight >= 15%` appliquée dans `OnViewportSizeChanged`.
+- 2026-02-12 : Correction de `NullReferenceException` dans `EntityManager` en initialisant `_mainWindow` et en passant `this` au constructeur `EntityManager`. Nettoyage de code pour réduire les warnings.
 
 ## Pourquoi ces règles sont importantes
 - Elles évitent des regressions courantes (ex. redimensionnement du viewport empêchant le scrolling), garantissent que l'UI n'interfère pas avec la zone de jeu et définissent des gardes pour que les modifications futures respectent l'architecture en place.
