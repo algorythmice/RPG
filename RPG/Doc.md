@@ -163,6 +163,17 @@ UpdateCamera();
 - le point de la caméra(Point)
 - la taille de l'objet a suivre si c'est un objet/entitée <span style="color:red">*Optionel</span>
 ---
+## Changer la taille d'une entitée
+```
+ResizeEntity();
+```
+#### Paramètres:
+- l'entitée à redimensionner(Guid?)
+- le pourcentage de redimensionnement(double)
+- le temps de redimensionnement en ms (int) (pas d'animation si non précisé) <span style="color:red">*Optionel</span>
+#### Retourne:
+- true si le redimensionnement a réussis sinon false (bool)
+---
 
 ## Créer une tâche qui s'execute a un interval régulier
 

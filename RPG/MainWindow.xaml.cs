@@ -54,6 +54,8 @@ public partial class MainWindow
 
     private void UpdateCameraForEntity(Guid? entityId) =>
         _entityManager.UpdateCameraForEntity(entityId, _mapWidthPixels, _mapHeightPixels);
+    private bool ResizeEntity(Guid? entityId, double percent, int animattionTime = 0) =>
+        _entityManager.ResizeEntity(entityId, percent, animattionTime);
     private static void GenerateTiles(
         int widthTiles, 
         int heightTiles, 
@@ -296,6 +298,11 @@ public partial class MainWindow
         if (IsEntityWithinRadius(player1?.Id, npc1?.Id, 80))
         {
             ShowEntitySpeech(npc1?.Id, "text1", TimeSpan.FromSeconds(2));
+            ResizeEntity(player1?.Id, 150, 180);
+        }
+        else
+        {
+            ResizeEntity(player1?.Id, 100, 180);
         }
 
         foreach (var id in CreatedEntities.ToList())

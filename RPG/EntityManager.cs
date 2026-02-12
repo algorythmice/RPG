@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Animation;
 
 namespace RPG;
 
@@ -41,6 +42,10 @@ public sealed class EntityManager
         public int Hp { get; set; }
         public required string Name { get; init; }
         public bool HasSpeech { get; init; }
+        public double OriginalImageWidth { get; init; }
+        public double OriginalImageHeight { get; init; }
+        public double TargetResizePercent { get; set; } = 100.0;
+        public bool IsResizing { get; set; }
     }
 
     public Guid CreateEntity(
@@ -114,6 +119,8 @@ public sealed class EntityManager
             Hp = entityHp,
             Name = name,
             HasSpeech = hasSpeech,
+            OriginalImageWidth = width,
+            OriginalImageHeight = height,
         };
         _entities[id] = info;
 
@@ -275,6 +282,96 @@ public sealed class EntityManager
         if (!_entities.TryGetValue(entityId.Value, out var info)) return null;
         return new Size(info.Root.Width, info.Root.Height);
     }
+
+    public bool ResizeEntity(Guid? entityId, double percent, int smooth)
+    {
+        _ = ResizeEntityAsync(entityId, percent, smooth);
+        return entityId != null && percent > 0 && _entities.ContainsKey(entityId.Value);
+    }
+    public Task<bool> ResizeEntityAsync(Guid? entityId, double percent, int smooth)
+    {
+        if (entityId == null) return Task.FromResult(false);
+        if (percent <= 0) return Task.FromResult(false);
+        if (!_entities.TryGetValue(entityId.Value, out var info)) return Task.FromResult(false);
+        
+        if (Math.Abs(info.TargetResizePercent - percent) < 0.01)
+        {
+            return Task.FromResult(true);
+        }
+        
+        info.TargetResizePercent = percent;
+        
+        double scale = percent / 100.0;
+
+        double newImageWidth = Math.Max(1.0, info.OriginalImageWidth * scale);
+        double newImageHeight = Math.Max(1.0, info.OriginalImageHeight * scale);
+
+        if (smooth > 0)
+        {
+            info.Image.BeginAnimation(FrameworkElement.WidthProperty, null);
+            info.Image.BeginAnimation(FrameworkElement.HeightProperty, null);
+            info.Root.BeginAnimation(FrameworkElement.WidthProperty, null);
+            info.Root.BeginAnimation(FrameworkElement.HeightProperty, null);
+            
+            info.IsResizing = true;
+            var tcs = new TaskCompletionSource<bool>();
+            var duration = new Duration(TimeSpan.FromMilliseconds(smooth));
+            
+            double currentImgW = info.Image.Width;
+            double currentImgH = info.Image.Height;
+            double currentRootW = info.Root.Width;
+            double currentRootH = info.Root.Height;
+
+            var animImgW = new DoubleAnimation(currentImgW, newImageWidth, duration) { FillBehavior = FillBehavior.HoldEnd };
+            var animImgH = new DoubleAnimation(currentImgH, newImageHeight, duration) { FillBehavior = FillBehavior.HoldEnd };
+            var animRootW = new DoubleAnimation(currentRootW, newImageWidth, duration) { FillBehavior = FillBehavior.HoldEnd };
+            var animRootH = new DoubleAnimation(currentRootH, newImageHeight + 20, duration) { FillBehavior = FillBehavior.HoldEnd };
+            
+            double targetPercentAtStart = percent;
+            
+            animRootH.Completed += (_, _) =>
+            {
+                info.IsResizing = false;
+                
+                if (Math.Abs(info.TargetResizePercent - targetPercentAtStart) < 0.01)
+                {
+                    info.Image.Width = newImageWidth;
+                    info.Image.Height = newImageHeight;
+                    info.Root.Width = newImageWidth;
+                    info.Root.Height = newImageHeight + 20;
+                }
+                
+                if (info.HasSpeech)
+                {
+                    _speechManager?.UpdatePosition(entityId.Value);
+                }
+                tcs.TrySetResult(true);
+            };
+
+            info.Image.BeginAnimation(FrameworkElement.WidthProperty, animImgW);
+            info.Image.BeginAnimation(FrameworkElement.HeightProperty, animImgH);
+            info.Root.BeginAnimation(FrameworkElement.WidthProperty, animRootW);
+            info.Root.BeginAnimation(FrameworkElement.HeightProperty, animRootH);
+
+            return tcs.Task;
+        }
+        else
+        {
+            info.Image.Width = newImageWidth;
+            info.Image.Height = newImageHeight;
+            
+            info.Root.Width = newImageWidth;
+            info.Root.Height = newImageHeight + 20;
+
+            if (info.HasSpeech)
+            {
+                _speechManager?.UpdatePosition(entityId.Value);
+            }
+
+            return Task.FromResult(true);
+        }
+    }
+
     public void ClampEntityToMap(Guid? entityId, double mapWidthPixels, double mapHeightPixels)
     {
         if (entityId == null) return;
@@ -299,7 +396,7 @@ public sealed class EntityManager
         if (entityId == null) return;
         var position = GetEntityPosition(entityId);
         var size = GetEntitySize(entityId);
-        if (position == null || size == null) return; 
+        if (position == null || size == null) return;
         _mainWindow.UpdateCamera(position.Value, size.Value);
     }
 }

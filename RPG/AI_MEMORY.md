@@ -1,4 +1,4 @@
-﻿﻿# 🧠 AI MEMORY
+﻿﻿﻿﻿# 🧠 AI MEMORY
 
 This file contains everything the AI must remember permanently.
 
@@ -21,7 +21,7 @@ This file contains everything the AI must remember permanently.
 
 ## Fonctions importantes (signatures principales copiées ici pour référence rapide)
 - `MainWindow` (filtres) : CreateEntity, GetEntityPosition, SetEntityPosition, RemoveEntity, GetEntityrHp, MoveEntity, IsEntityWithinRadius, SetEntityHp, FindEntityByName, ShowEntitySpeech, HideEntitySpeech, GetEntitySpeechText, GenerateTiles, RegisterTick, UnregisterTick, StopGameLoop, StartGameLoop, UpdateCameraForEntity, UpdateCamera, ClampEntityToMap, FindEntityById
-- `EntityManager` : CreateEntity, GetEntityrHp, GetEntityPosition, SetEntityPosition, RemoveEntity, MoveEntity, IsEntityWithinRadius, SetEntityHp, ShowEntitySpeech, HideEntitySpeech, GetEntitySpeechText, FindEntityByName, FindEntityById, GetEntitySize
+- `EntityManager` : CreateEntity, GetEntityrHp, GetEntityPosition, SetEntityPosition, RemoveEntity, MoveEntity, IsEntityWithinRadius, SetEntityHp, ShowEntitySpeech, HideEntitySpeech, GetEntitySpeechText, FindEntityByName, FindEntityById, GetEntitySize, ResizeEntity, ResizeEntityAsync
 - `GameLoop` : Start, Stop, Register, Unregister, Clear, Schedule, CancelScheduled, ClearScheduled
 - `TerrainGeneration` : GenerateTiles(widthTiles, heightTiles, tileSize, tileUri, tilesLayer, gameCanvas)
 - `SpeechManager` : RegisterEntity, ShowSpeech, HideSpeech, UpdatePosition, GetSpeechText, RemoveSpeech
@@ -30,6 +30,7 @@ This file contains everything the AI must remember permanently.
 - ABSOLUTE: NE JAMAIS changer quoi que ce soit que l'utilisateur n'a PAS demandé explicitement.
 - NE PAS simplifier la logique existante sans demande explicite.
 - Respecter la nullabilité explicite et le traitement explicite des erreurs.
+- OPTIMISATION ANIMATIONS: Les animations appelées dans la boucle de jeu DOIVENT vérifier si le paramètre cible a changé avant de démarrer. Sinon, des centaines d'animations superposées sont créées causant du lag. Utiliser un champ `TargetXxx` pour suivre la valeur cible actuelle et ne démarrer une animation que si la nouvelle valeur diffère.
 - Lors des modifications de code C#, suivre le processus :
   1) Faire les changements nécessaires (Kotlin/XML non concernés ici, projet WPF C#).
   2) Exécuter `get_errors()`.
