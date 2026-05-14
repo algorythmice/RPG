@@ -142,7 +142,7 @@ public partial class MainWindow
 
         if (File.Exists(entityTexture))
         {
-            var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 63, 60, 200, 120, 80, false,  "Player1");
+            var entityId1 = CreateEntity(new Uri(entityTexture, UriKind.Absolute), 128, 128, 200, 120, 80, false,  "Player1");
             _playerId = entityId1;
             CreateEntity(new Uri(entityTexture2, UriKind.Absolute), 64, 64, 400, 120, 100, true, "Npc1");
         }
