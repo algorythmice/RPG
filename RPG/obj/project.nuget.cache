@@ -1,14 +1,14 @@
 {
   "version": 2,
-  "dgSpecHash": "kBGJHQN5BEg=",
+  "dgSpecHash": "D5Aoyns/iWc=",
   "success": true,
-  "projectFilePath": "D:\\Users\\chris\\Bureau\\programation\\rider\\RPG\\RPG\\RPG.csproj",
+  "projectFilePath": "C:\\Users\\enzor\\RiderProjects\\RPG\\RPG\\RPG.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\chris\\.nuget\\packages\\microsoft.net.illink.tasks\\10.0.5\\microsoft.net.illink.tasks.10.0.5.nupkg.sha512",
-    "C:\\Users\\chris\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\10.0.5\\microsoft.netcore.app.runtime.win-x64.10.0.5.nupkg.sha512",
-    "C:\\Users\\chris\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\10.0.5\\microsoft.windowsdesktop.app.runtime.win-x64.10.0.5.nupkg.sha512",
-    "C:\\Users\\chris\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\10.0.5\\microsoft.aspnetcore.app.runtime.win-x64.10.0.5.nupkg.sha512",
-    "C:\\Users\\chris\\.nuget\\packages\\microsoft.netcore.app.crossgen2.win-x64\\10.0.5\\microsoft.netcore.app.crossgen2.win-x64.10.0.5.nupkg.sha512"
+    "C:\\Users\\enzor\\.nuget\\packages\\microsoft.net.illink.tasks\\10.0.8\\microsoft.net.illink.tasks.10.0.8.nupkg.sha512",
+    "C:\\Users\\enzor\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\10.0.8\\microsoft.netcore.app.runtime.win-x64.10.0.8.nupkg.sha512",
+    "C:\\Users\\enzor\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\10.0.8\\microsoft.windowsdesktop.app.runtime.win-x64.10.0.8.nupkg.sha512",
+    "C:\\Users\\enzor\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\10.0.8\\microsoft.aspnetcore.app.runtime.win-x64.10.0.8.nupkg.sha512",
+    "C:\\Users\\enzor\\.nuget\\packages\\microsoft.netcore.app.crossgen2.win-x64\\10.0.8\\microsoft.netcore.app.crossgen2.win-x64.10.0.8.nupkg.sha512"
   ],
   "logs": []
 }
