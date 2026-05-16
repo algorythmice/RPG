@@ -56,23 +56,6 @@ public partial class MainWindow
         _entityManager.UpdateCameraForEntity(entityId, _mapWidthPixels, _mapHeightPixels);
     private bool ResizeEntity(Guid? entityId, double percent, int animattionTime = 0) =>
         _entityManager.ResizeEntity(entityId, percent, animattionTime);
-    private static void GenerateTiles(
-        int widthTiles, 
-        int heightTiles, 
-        int tileSize, 
-        Uri tileUri, 
-        Canvas tilesLayer, 
-        Canvas gameCanvas
-        ) => 
-        
-        TerrainGeneration.GenerateTiles(
-        widthTiles, 
-        heightTiles, 
-        tileSize, 
-        tileUri, 
-        tilesLayer, 
-        gameCanvas
-        );
     public void RegisterTick(Action<double> handler) => _gameLoop.Register(handler);
     public void UnregisterTick(Action<double> handler) => _gameLoop.Unregister(handler);
     public void StopGameLoop() => _gameLoop.Stop();
@@ -127,16 +110,10 @@ public partial class MainWindow
         var grassTexture = Path.Combine(assetsDir, "grass_block.png");
         var entityTexture = Path.Combine(assetsDir, "player.png");
         var entityTexture2 = Path.Combine(assetsDir, "player2.png");
-        
-        const int mapWidthTiles = 50;
-        const int mapHeightTiles = 30;
-        const int tileSize = 64;
-        _mapWidthPixels = mapWidthTiles * tileSize;
-        _mapHeightPixels = mapHeightTiles * tileSize;
 
-        GenerateTiles(mapWidthTiles, mapHeightTiles, tileSize, new Uri(grassTexture, UriKind.Absolute), GroundLayer, GameCanvas);
-        GroundLayer.Width = _mapWidthPixels;
-        GroundLayer.Height = _mapHeightPixels;
+        TerrainGeneration.GenerateMapBackground(new Uri(grassTexture, UriKind.Absolute), GroundLayer, GameCanvas);
+        _mapWidthPixels = GroundLayer.Width;
+        _mapHeightPixels = GroundLayer.Height;
         EntitiesLayer.Width = _mapWidthPixels;
         EntitiesLayer.Height = _mapHeightPixels;
 

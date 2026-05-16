@@ -5,54 +5,46 @@ using System.Windows.Media.Imaging;
 
 public class TerrainGeneration
 {
+
     /// <summary>
-    /// Génère une grille de tuiles dans le canvas TilesLayer.
-    /// - widthTiles : nombre de tuiles en largeur (colonnes)
-    /// - heightTiles : nombre de tuiles en hauteur (lignes)
-    /// - tileSize : taille en pixels d'une tuile (carrée)
-    /// - tileUri : Uri vers l'image de la tuile (chemin file:// ou pack:// si vous préférez intégrer en ressource)
+    /// Affiche une seule image qui représente la map complète dans le canvas TilesLayer.
+    /// - mapUri : Uri de l'image complète de la map
+    /// - tilesLayer : canvas sur lequel afficher le background
+    /// - desiredWidth/desiredHeight : si fournis, redimensionne l'image aux dimensions souhaitées (en pixels)
     ///
-    /// La méthode supprime d'abord les enfants existants de TilesLayer puis crée les images nécessaires.
-    ///
-    /// Utilisation : appeler depuis le code-behind pour changer dynamiquement largeur/hauteur/taille.
+    /// Utilisation : appeler depuis le code-behind quand vous avez une image de map unique au lieu d'une tuile répétée.
     /// </summary>
-    public static void GenerateTiles(int widthTiles, int heightTiles, int tileSize, Uri tileUri, Canvas tilesLayer, Canvas gameCanvas)
+    public static void GenerateMapBackground(Uri mapUri, Canvas tilesLayer, Canvas gameCanvas, double? desiredWidth = null, double? desiredHeight = null)
     {
-        if (widthTiles <= 0) throw new ArgumentOutOfRangeException(nameof(widthTiles));
-        if (heightTiles <= 0) throw new ArgumentOutOfRangeException(nameof(heightTiles));
-        if (tileSize <= 0) throw new ArgumentOutOfRangeException(nameof(tileSize));
-        if (tileUri == null) throw new ArgumentNullException(nameof(tileUri));
+        if (mapUri == null) throw new ArgumentNullException(nameof(mapUri));
         if (tilesLayer == null) throw new ArgumentNullException(nameof(tilesLayer));
         if (gameCanvas == null) throw new ArgumentNullException(nameof(gameCanvas));
 
         tilesLayer.Children.Clear();
-        
+
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
-        bitmap.UriSource = tileUri;
+        bitmap.UriSource = mapUri;
         bitmap.CacheOption = BitmapCacheOption.OnLoad;
         bitmap.EndInit();
         bitmap.Freeze();
 
-        for (int y = 0; y < heightTiles; y++)
-        {
-            for (int x = 0; x < widthTiles; x++)
-            {
-                var img = new Image
-                {
-                    Width = tileSize,
-                    Height = tileSize,
-                    Source = bitmap,
-                    Stretch = Stretch.Fill,
-                };
+        double imgWidth = desiredWidth ?? bitmap.PixelWidth;
+        double imgHeight = desiredHeight ?? bitmap.PixelHeight;
 
-                Canvas.SetLeft(img, x * tileSize);
-                Canvas.SetTop(img, y * tileSize);
-                tilesLayer.Children.Add(img);
-            }
-        }
-        
-        tilesLayer.Width = widthTiles * tileSize;
-        tilesLayer.Height = heightTiles * tileSize;
+        var img = new Image
+        {
+            Source = bitmap,
+            Width = imgWidth,
+            Height = imgHeight,
+            Stretch = Stretch.Fill
+        };
+
+        Canvas.SetLeft(img, 0);
+        Canvas.SetTop(img, 0);
+        tilesLayer.Children.Add(img);
+
+        tilesLayer.Width = imgWidth;
+        tilesLayer.Height = imgHeight;
     }
 }
